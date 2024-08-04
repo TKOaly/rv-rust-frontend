@@ -110,7 +110,7 @@ pub fn login(username: &str, password: &str) -> ApiResultValue<AuthenticationRes
         .json(&HashMap::from([
             ("username", &username),
             ("password", &password),
-            ("rvTerminalSecret", RV_TERMINAL_SECRET),
+            ("rvTerminalSecret", &RV_TERMINAL_SECRET.as_str()),
         ]))
         .send()
         .expect("api error");
@@ -129,7 +129,7 @@ pub fn login_rfid(rfid: &str) -> Option<AuthenticationResponse> {
         .post(format!("{}/v1/authenticate/rfid", *API_URL))
         .json(&HashMap::from([
             ("rfid", &rfid),
-            ("rvTerminalSecret", RV_TERMINAL_SECRET),
+            ("rvTerminalSecret", &RV_TERMINAL_SECRET.as_str()),
         ]))
         .send()
         .expect("api error");
