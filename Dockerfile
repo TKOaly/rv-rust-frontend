@@ -1,4 +1,5 @@
-FROM rust:1-slim
+FROM rust:1
 COPY Cargo.lock Cargo.toml ./
-COPY src/ .
+COPY src/ src/
 RUN cargo build --release
+CMD ["./target/release/rvterminal"]
