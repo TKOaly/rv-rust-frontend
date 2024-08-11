@@ -2,6 +2,7 @@ pub mod input;
 mod rv_api;
 mod user_loop;
 mod utils;
+use lazy_static::lazy_static;
 
 use crossterm::{
     cursor,
@@ -19,9 +20,15 @@ use std::{
 };
 use utils::{printline, ConfirmResult, TimeoutResult};
 
-// TODO rename this to "short"
 pub const INPUT_TIMEOUT_SHORT: Duration = Duration::from_secs(60);
 pub const INPUT_TIMEOUT_LONG: Duration = Duration::from_secs(5 * 60);
+
+lazy_static! {
+    static ref DEVELOPMENT_MODE: bool = match std::env::var("DEVELOPMENT") {
+        Ok(v) => true,
+        Err(_) => false,
+    };
+}
 
 pub struct TerminalWriter {
     stdout: Stdout,
@@ -222,7 +229,7 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
             }
         }
 
-        if username == "quit" {
+        if username == "quit" && *DEVELOPMENT_MODE {
             return Ok(());
         }
 

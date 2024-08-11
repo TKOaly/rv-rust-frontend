@@ -1469,8 +1469,6 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
             Print(" - undo a recent purchase\r\n"),
             PrintStyledContent("<enter>".dark_green().bold()),
             Print(" - log out\r\n"),
-            PrintStyledContent("E".dark_green().bold()),
-            Print(" - EXIT PROGRAM\r\n"),
         )
         .unwrap();
         if user_info.is_admin() {
@@ -1545,9 +1543,6 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                             }
                             printline(terminal_io, "\n");
                             break;
-                        }
-                        'e' => {
-                            exit(0);
                         }
                         'm' => {
                             if user_info.is_admin() {
