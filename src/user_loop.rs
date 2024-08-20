@@ -1562,6 +1562,10 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                             }
                             break;
                         }
+                        'q' => {
+                            // Legacy behavior wanted by some old users, need not to show in the list of commands
+                            break 'main; // Logout
+                        }
                         '0'..='9' => {
                             terminal_io.writer.execute(Print(c)).unwrap();
                             command.push(c);
@@ -1584,7 +1588,7 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                         command = command.trim().to_string();
                         utils::printline(terminal_io, "\r\n");
                         if command.is_empty() {
-                            break 'main;
+                            break 'main; // Logout
                         } else if command == "exit" {
                             disable_raw_mode().unwrap();
                             exit(0);
