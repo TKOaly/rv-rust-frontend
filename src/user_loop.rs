@@ -1005,6 +1005,8 @@ fn deposit(
                     return TimeoutResult::RESULT(());
                 } else if s == "cash" {
                     rv_api::deposit(&credentials, &amount, "cash").unwrap();
+                    utils::printline(terminal_io, "Remember to put cash in an envelope or send an email immediately to rv@tko-aly.fi to explain a non-envelope deposit.");
+                    utils::confirm_enter_to_continue(terminal_io);
                     break;
                 } else if s == "bank" {
                     rv_api::deposit(&credentials, &amount, "banktransfer").unwrap();
