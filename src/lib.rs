@@ -189,6 +189,7 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
         )?;
         execute!(
             terminal_io.writer,
+            Print("to log in or register\r\n"),
             Print("enter username: "),
             SavePosition,
             cursor::MoveTo(0, 3),
