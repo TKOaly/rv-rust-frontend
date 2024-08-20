@@ -13,6 +13,7 @@ use crate::utils::clear_terminal;
 use crate::utils::print_error_line;
 use crate::utils::print_title;
 use crate::utils::printline;
+use crate::utils::purchase_fail_bell;
 use crate::utils::readline;
 use crate::utils::TimeoutResult;
 use crate::TerminalIO;
@@ -667,6 +668,7 @@ fn purchase_items(
             );
         }
         ApiResult::Fail(msg) => {
+            purchase_fail_bell();
             print_error_line(terminal_io, &format!("Purchase failed: {msg}"));
         }
     }

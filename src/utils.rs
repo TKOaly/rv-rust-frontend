@@ -14,7 +14,12 @@ pub enum TimeoutResult<T> {
     TIMEOUT,
 }
 
-use std::{sync::mpsc::RecvTimeoutError, time::Duration};
+use std::{
+    fs,
+    sync::mpsc::RecvTimeoutError,
+    thread::{self, sleep},
+    time::Duration,
+};
 
 pub fn format_money(cents: &i32) -> String {
     format!(
@@ -39,6 +44,23 @@ mod tests {
         assert_eq!(format_money(&12342), "123.42");
         assert_eq!(format_money(&-12342), "-123.42");
     }
+}
+
+pub fn purchase_fail_bell() {
+    thread::spawn(|| {
+        let mut tty = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open("/dev/tty")
+            .unwrap();
+        execute!(tty, Print("\u{0007}")).unwrap();
+        sleep(Duration::from_millis(400));
+        execute!(tty, Print("\u{0007}")).unwrap();
+        sleep(Duration::from_millis(400));
+        execute!(tty, Print("\u{0007}")).unwrap();
+        sleep(Duration::from_millis(400));
+        execute!(tty, Print("\u{0007}")).unwrap();
+    });
 }
 
 pub fn printline(terminal_io: &mut TerminalIO, s: &str) {
