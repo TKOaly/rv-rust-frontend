@@ -603,7 +603,7 @@ fn return_purchase(
             let product = get_product_info(credentials, &barcode).unwrap();
             printline(
                 terminal_io,
-                &format!("Returned product: {} successfully", product.name),
+                &format!("\nReturned product: {} successfully", product.name),
             );
         }
         ApiResult::Fail(msg) => print_error_line(terminal_io, &format!("Return failed {msg}")),
@@ -1492,12 +1492,13 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
     )
     .unwrap();
     print_user_loop_instructions(credentials, terminal_io);
+    printline(terminal_io, "");
     'main: loop {
         let user_info = rv_api::get_user_info(&credentials).unwrap();
         execute!(
             terminal_io.writer,
             Print(&format!(
-                "\nDear {}, your saldo is {} > ",
+                "Dear {}, your saldo is {} > ",
                 user_info.username,
                 utils::format_money(&user_info.money_balance)
             ))
@@ -1529,7 +1530,7 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                                 TimeoutResult::TIMEOUT => break 'main,
                                 _ => (),
                             }
-                            printline(terminal_io, "\n");
+                            printline(terminal_io, "");
                             break;
                         }
                         'f' => {
@@ -1538,7 +1539,7 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                                 TimeoutResult::TIMEOUT => break 'main,
                                 _ => (),
                             }
-                            printline(terminal_io, "\n");
+                            printline(terminal_io, "");
                             break;
                         }
                         'p' => {
@@ -1547,7 +1548,7 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                                 TimeoutResult::TIMEOUT => break 'main,
                                 _ => (),
                             }
-                            printline(terminal_io, "\n");
+                            printline(terminal_io, "");
                             break;
                         }
                         'r' => {
@@ -1556,7 +1557,7 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                                 TimeoutResult::TIMEOUT => break 'main,
                                 _ => (),
                             }
-                            printline(terminal_io, "\n");
+                            printline(terminal_io, "");
                             break;
                         }
                         'm' => {
@@ -1576,6 +1577,7 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                                 TimeoutResult::TIMEOUT => break 'main,
                                 _ => (),
                             }
+                            printline(terminal_io, "");
                             break;
                         }
                         'q' => {
@@ -1610,7 +1612,7 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                             exit(0);
                         } else if Regex::new("^[0-9]+$").expect("").is_match(&command) {
                             purchase_items(terminal_io, &command, 1, credentials);
-                            printline(terminal_io, "\n");
+                            printline(terminal_io, "");
                             break;
                         } else {
                             utils::print_error_line(
