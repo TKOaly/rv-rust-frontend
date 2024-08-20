@@ -878,14 +878,14 @@ fn deposit(
     print_title(terminal_io, "Deposit money");
     utils::printline(
         terminal_io,
-        "How much to deposit? Format: [0-9]+\\.[0-9][0-9]",
+        "How much to deposit? Format: [0-9]+(\\.[0-9][0-9])?",
     );
-    utils::printline(terminal_io, "At least one number, followed by period, followed by two numbers. For example: '1.00', '0.01', '14.42'");
+    utils::printline(terminal_io, "At least one number, optionally followed by period, followed by two numbers. For example: '1', '0.10', '14.42'");
     let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
         TimeoutResult::RESULT(s) => s,
     };
-    if !Regex::new("^[0-9]+\\.[0-9][0-9]$")
+    if !Regex::new("^[0-9]+(\\.[0-9][0-9])?$")
         .unwrap()
         .is_match(&input_line)
     {
@@ -893,7 +893,12 @@ fn deposit(
         utils::print_error_line(terminal_io, "Invalid input. Deposit aborted!");
         return TimeoutResult::RESULT(());
     }
-    let amount: u32 = input_line.replace(".", "").parse().unwrap();
+    let amount: u32 = if input_line.contains(".") {
+        input_line.replace(".", "").parse().unwrap()
+    } else {
+        // No decimals specified, multiply by 100 to get cents
+        input_line.parse::<u32>().unwrap() * 100
+    };
 
     if amount > 25000 {
         printline(terminal_io, "");
