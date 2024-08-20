@@ -5,10 +5,10 @@ mod utils;
 use lazy_static::lazy_static;
 
 use crossterm::{
-    cursor,
+    cursor::{self, RestorePosition, SavePosition},
     event::{Event, KeyCode},
     execute,
-    style::Print,
+    style::{Print, PrintStyledContent, Stylize},
     terminal::{self, enable_raw_mode, EnterAlternateScreen},
 };
 
@@ -18,6 +18,7 @@ use std::{
     sync::mpsc::{Receiver, RecvTimeoutError},
     time::Duration,
 };
+use user_loop::RV_LOGO;
 use utils::{printline, ConfirmResult, TimeoutResult};
 
 pub const INPUT_TIMEOUT_SHORT: Duration = Duration::from_secs(60);
@@ -186,7 +187,14 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
             terminal::Clear(terminal::ClearType::All),
             cursor::MoveTo(0, terminal::size()?.1)
         )?;
-        execute!(terminal_io.writer, Print("enter username: "))?;
+        execute!(
+            terminal_io.writer,
+            Print("enter username: "),
+            SavePosition,
+            cursor::MoveTo(0, 3),
+            PrintStyledContent(RV_LOGO.yellow()),
+            RestorePosition
+        )?;
         let mut username = String::new();
         loop {
             match &terminal_io.recv.recv().unwrap() {

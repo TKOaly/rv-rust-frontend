@@ -36,7 +36,7 @@ use regex::Regex;
 use rv_api::ApiResult;
 use std::process::exit;
 use std::sync::mpsc::RecvTimeoutError;
-static RV_LOGO: &str = " \
+pub static RV_LOGO: &str = " \
 ______     __\r\n|  _ \\ \\   / /\r\n| |_) \\ \\ / / \r\n|  _ < \\ V /  \r\n|_| \\_\\ \\_/   \r\n\
 \r\n\
 ";
