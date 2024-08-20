@@ -37,10 +37,14 @@ use regex::Regex;
 use rv_api::ApiResult;
 use std::process::exit;
 use std::sync::mpsc::RecvTimeoutError;
+use std::thread::sleep;
+use std::time::Duration;
 pub static RV_LOGO: &str = " \
 ______     __\r\n|  _ \\ \\   / /\r\n| |_) \\ \\ / / \r\n|  _ < \\ V /  \r\n|_| \\_\\ \\_/   \r\n\
 \r\n\
 ";
+static PURCHASE_FAILED_MSG1: &str = "          _,.-----.,_                                                                         _,.-----.,_                 \r\n       ,-~           ~-.                                                                   ,-~           ~-.              \r\n      ,^___           ___^.                                                               ,^___           ___^.           \r\n    /~\"   ~\"   .   \"~   \"~\\                                                             /~\"   ~\"   .   \"~   \"~\\           \r\n   Y  ,--._    I    _.--.  Y                                                           Y  ,--._    I    _.--.  Y          \r\n    | Y     ~-. | ,-~     Y |                                                           | Y     ~-. | ,-~     Y |         \r\n    | |        }:{        | |                                                           | |        }:{        | |         \r\n    j l       / | \\       ! l                                                           j l       / | \\       ! l         \r\n .-~  (__,.--\" .^. \"--.,__)  ~-.                                                     .-~  (__,.--\" .^. \"--.,__)  ~-.      \r\n(           / / | \\ \\           )                                                   (           / / | \\ \\           )     \r\n \\.____,   ~  \\/\"\\/  ~   .____,/                                                     \\.____,   ~  \\/\"\\/  ~   .____,/      \r\n  ^.____                 ____.^                                                       ^.____                 ____.^       \r\n     | |T ~\\  !   !  /~ T| |                                                             | |T ~\\  !   !  /~ T| |          \r\n     | |l   _ _ _ _ _   !| |                                                             | |l   _ _ _ _ _   !| |          \r\n     | l \\/V V V V V V\\/ j |                                                             | l \\/V V V V V V\\/ j |          \r\n     l  \\ \\|_|_|_|_|_|/ /  !                                                             l  \\ \\|_|_|_|_|_|/ /  !          \r\n      \\  \\[T T T T T TI/  /                                                               \\  \\[T T T T T TI/  /           \r\n       \\  `^-^-^-^-^-^'  /                                                                 \\  `^-^-^-^-^-^'  /            \r\n        \\               /                                                                   \\               /             \r\n         \\.           ,/                                                                     \\.           ,/              \r\n           \"^-.___,-^\"                                                                         \"^-.___,-^\"                \r\n";
+static PURCHASE_FAILED_MSG2: &str = " ██▓███   █    ██  ██▀███   ▄████▄   ██░ ██  ▄▄▄        ██████ ▓█████      █████▒▄▄▄       ██▓ ██▓    ▓█████ ▓█████▄      \r\n▓██░  ██▒ ██  ▓██▒▓██ ▒ ██▒▒██▀ ▀█  ▓██░ ██▒▒████▄    ▒██    ▒ ▓█   ▀    ▓██   ▒▒████▄    ▓██▒▓██▒    ▓█   ▀ ▒██▀ ██▌     \r\n▓██░ ██▓▒▓██  ▒██░▓██ ░▄█ ▒▒▓█    ▄ ▒██▀▀██░▒██  ▀█▄  ░ ▓██▄   ▒███      ▒████ ░▒██  ▀█▄  ▒██▒▒██░    ▒███   ░██   █▌     \r\n▒██▄█▓▒ ▒▓▓█  ░██░▒██▀▀█▄  ▒▓▓▄ ▄██▒░▓█ ░██ ░██▄▄▄▄██   ▒   ██▒▒▓█  ▄    ░▓█▒  ░░██▄▄▄▄██ ░██░▒██░    ▒▓█  ▄ ░▓█▄   ▌     \r\n▒██▒ ░  ░▒▒█████▓ ░██▓ ▒██▒▒ ▓███▀ ░░▓█▒░██▓ ▓█   ▓██▒▒██████▒▒░▒████▒   ░▒█░    ▓█   ▓██▒░██░░██████▒░▒████▒░▒████▓      \r\n▒▓▒░ ░  ░░▒▓▒ ▒ ▒ ░ ▒▓ ░▒▓░░ ░▒ ▒  ░ ▒ ░░▒░▒ ▒▒   ▓▒█░▒ ▒▓▒ ▒ ░░░ ▒░ ░    ▒ ░    ▒▒   ▓▒█░░▓  ░ ▒░▓  ░░░ ▒░ ░ ▒▒▓  ▒      \r\n░▒ ░     ░░▒░ ░ ░   ░▒ ░ ▒░  ░  ▒    ▒ ░▒░ ░  ▒   ▒▒ ░░ ░▒  ░ ░ ░ ░  ░    ░       ▒   ▒▒ ░ ▒ ░░ ░ ▒  ░ ░ ░  ░ ░ ▒  ▒      \r\n░░        ░░░ ░ ░   ░░   ░ ░         ░  ░░ ░  ░   ▒   ░  ░  ░     ░       ░ ░     ░   ▒    ▒ ░  ░ ░      ░    ░ ░  ░      \r\n            ░        ░     ░ ░       ░  ░  ░      ░  ░      ░     ░  ░                ░  ░ ░      ░  ░   ░  ░   ░         \r\n                           ░                                                                                  ░           \r\n";
 
 fn new_product(
     barcode: &str,
@@ -669,7 +673,23 @@ fn purchase_items(
         }
         ApiResult::Fail(msg) => {
             purchase_fail_bell();
-            print_error_line(terminal_io, &format!("Purchase failed: {msg}"));
+            let user_info = get_user_info(credentials).unwrap();
+            execute!(
+                terminal_io.writer,
+                PrintStyledContent(PURCHASE_FAILED_MSG1.green()),
+                PrintStyledContent(PURCHASE_FAILED_MSG2.red()),
+                Print("\r\n"),
+                Print(&format!("Dear {}, your purchase has", user_info.username)),
+                PrintStyledContent(" FAILED ".red()),
+                Print(&format!("with an error: {msg}\r\n")),
+                Print("You must wait 15 seconds before you can proceed!\r\n"),
+            )
+            .unwrap();
+            sleep(Duration::from_secs(15));
+            while terminal_io.recv.try_recv().is_ok() {
+                // Discard all input until channel is empty
+            }
+            utils::confirm_enter_to_continue(terminal_io);
         }
     }
 }
