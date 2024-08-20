@@ -1440,45 +1440,53 @@ fn management_mode_loop(
     TimeoutResult::RESULT(())
 }
 
+fn print_user_loop_instructions(
+    credentials: &rv_api::AuthenticationResponse,
+    terminal_io: &mut TerminalIO,
+) {
+    let user_info = rv_api::get_user_info(&credentials).unwrap();
+    queue!(
+        terminal_io.writer,
+        cursor::MoveTo(0, terminal::size()?.1),
+        Print(RV_LOGO.yellow()),
+        Print("Available commands (press key to select):\r\n"),
+        PrintStyledContent("<barcode>".dark_green()),
+        Print(" - buy this item\r\n"),
+        PrintStyledContent("B".dark_green().bold()),
+        Print(" - buy item multiple times\r\n"),
+        PrintStyledContent("D".dark_green().bold()),
+        Print(" - deposit to your account\r\n"),
+        PrintStyledContent("F".dark_green().bold()),
+        Print(" - list matching products\r\n"),
+        PrintStyledContent("P".dark_green().bold()),
+        Print(" - change password\r\n"),
+        PrintStyledContent("R".dark_green().bold()),
+        Print(" - manage your rfid\r\n"),
+        PrintStyledContent("U".dark_green().bold()),
+        Print(" - undo a recent purchase\r\n"),
+        PrintStyledContent("<enter>".dark_green().bold()),
+        Print(" - log out\r\n"),
+    )
+    .unwrap();
+    if user_info.is_admin() {
+        queue!(
+            terminal_io.writer,
+            PrintStyledContent("M".dark_green().bold()),
+            Print(" - enter management mode\r\n"),
+        )
+        .unwrap();
+    }
+}
+
 pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut TerminalIO) {
     execute!(
         terminal_io.writer,
         terminal::Clear(terminal::ClearType::All)
     )
     .unwrap();
+    print_user_loop_instructions(credentials, terminal_io);
     'main: loop {
         let user_info = rv_api::get_user_info(&credentials).unwrap();
-        queue!(
-            terminal_io.writer,
-            cursor::MoveTo(0, terminal::size()?.1),
-            Print(RV_LOGO.yellow()),
-            Print("Available commands (press key to select):\r\n"),
-            PrintStyledContent("<barcode>".dark_green()),
-            Print(" - buy this item\r\n"),
-            PrintStyledContent("B".dark_green().bold()),
-            Print(" - buy item multiple times\r\n"),
-            PrintStyledContent("D".dark_green().bold()),
-            Print(" - deposit to your account\r\n"),
-            PrintStyledContent("F".dark_green().bold()),
-            Print(" - list matching products\r\n"),
-            PrintStyledContent("P".dark_green().bold()),
-            Print(" - change password\r\n"),
-            PrintStyledContent("R".dark_green().bold()),
-            Print(" - manage your rfid\r\n"),
-            PrintStyledContent("U".dark_green().bold()),
-            Print(" - undo a recent purchase\r\n"),
-            PrintStyledContent("<enter>".dark_green().bold()),
-            Print(" - log out\r\n"),
-        )
-        .unwrap();
-        if user_info.is_admin() {
-            queue!(
-                terminal_io.writer,
-                PrintStyledContent("M".dark_green().bold()),
-                Print(" - enter management mode\r\n"),
-            )
-            .unwrap();
-        }
         execute!(
             terminal_io.writer,
             Print(&format!(
@@ -1551,6 +1559,7 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                                     TimeoutResult::TIMEOUT => break 'main,
                                     _ => (),
                                 }
+                                print_user_loop_instructions(credentials, terminal_io);
                                 break;
                             }
                         }
