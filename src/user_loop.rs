@@ -960,7 +960,7 @@ fn deposit(
             Print("PLEASE TYPE EITHER '"),
             PrintStyledContent("cash".with(Color::Black).on(Color::White)),
             Print("' OR '"),
-            PrintStyledContent("banktransfer".with(Color::Black).on(Color::White)),
+            PrintStyledContent("bank".with(Color::Black).on(Color::White)),
             Print("' FOLLOWED BY <ENTER>:\r\n"),
         )
         .unwrap();
@@ -977,7 +977,7 @@ fn deposit(
                 } else if s == "cash" {
                     rv_api::deposit(&credentials, &amount, "cash").unwrap();
                     break;
-                } else if s == "banktransfer" {
+                } else if s == "bank" {
                     rv_api::deposit(&credentials, &amount, "banktransfer").unwrap();
                     break;
                 } else {
