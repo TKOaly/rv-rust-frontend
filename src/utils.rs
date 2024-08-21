@@ -14,9 +14,10 @@ pub enum TimeoutResult<T> {
     TIMEOUT,
 }
 
+use core::str;
 use std::{
     fs,
-    process::Command,
+    process::{Command, ExitStatus},
     sync::mpsc::RecvTimeoutError,
     thread::{self, sleep},
     time::Duration,
@@ -48,13 +49,27 @@ mod tests {
 }
 
 pub fn set_small_font() {
-    Command::new("setfont").arg("Uni2-VGA16").output().unwrap();
+    let output = Command::new("setfont").arg("Uni2-VGA16").output().unwrap();
+    if !ExitStatus::success(&output.status) {
+        eprintln!(
+            "Setfont exit code {}\n stderr: {}",
+            output.status,
+            &str::from_utf8(&output.stderr).unwrap()
+        );
+    }
 }
 pub fn set_big_font() {
-    Command::new("setfont")
+    let output = Command::new("setfont")
         .arg("Uni2-VGA32x16")
         .output()
         .unwrap();
+    if !ExitStatus::success(&output.status) {
+        eprintln!(
+            "Setfont exit code {}\n stderr: {}",
+            output.status,
+            &str::from_utf8(&output.stderr).unwrap()
+        );
+    }
 }
 
 pub fn purchase_fail_bell() {
