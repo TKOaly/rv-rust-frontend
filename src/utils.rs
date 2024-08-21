@@ -16,6 +16,7 @@ pub enum TimeoutResult<T> {
 
 use std::{
     fs,
+    process::Command,
     sync::mpsc::RecvTimeoutError,
     thread::{self, sleep},
     time::Duration,
@@ -44,6 +45,16 @@ mod tests {
         assert_eq!(format_money(&12342), "123.42");
         assert_eq!(format_money(&-12342), "-123.42");
     }
+}
+
+pub fn set_small_font() {
+    Command::new("setfont").arg("Uni2-VGA16").output().unwrap();
+}
+pub fn set_big_font() {
+    Command::new("setfont")
+        .arg("Uni2-VGA32x16")
+        .output()
+        .unwrap();
 }
 
 pub fn purchase_fail_bell() {

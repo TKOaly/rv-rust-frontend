@@ -294,6 +294,7 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
 }
 
 pub fn start() -> io::Result<()> {
+    utils::set_big_font();
     let mut terminal_io = TerminalIO {
         recv: input::init(),
         writer: TerminalWriter::new(false),

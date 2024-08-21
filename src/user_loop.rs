@@ -15,6 +15,7 @@ use crate::utils::print_title;
 use crate::utils::printline;
 use crate::utils::purchase_fail_bell;
 use crate::utils::readline;
+use crate::utils::set_big_font;
 use crate::utils::TimeoutResult;
 use crate::TerminalIO;
 use crate::INPUT_TIMEOUT_LONG;
@@ -674,6 +675,7 @@ fn purchase_items(
         ApiResult::Fail(msg) => {
             purchase_fail_bell();
             let user_info = get_user_info(credentials).unwrap();
+            utils::set_small_font();
             execute!(
                 terminal_io.writer,
                 PrintStyledContent(PURCHASE_FAILED_MSG1.green()),
@@ -690,6 +692,7 @@ fn purchase_items(
                 // Discard all input until channel is empty
             }
             utils::confirm_enter_to_continue(terminal_io);
+            utils::set_big_font();
         }
     }
 }
