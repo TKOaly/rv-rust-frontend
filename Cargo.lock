@@ -803,7 +803,6 @@ version = "0.1.0"
 dependencies = [
  "crossterm",
  "evdev",
- "lazy_static",
  "regex",
  "reqwest",
  "rusb",

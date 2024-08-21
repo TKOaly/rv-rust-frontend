@@ -1,15 +1,13 @@
-use lazy_static::lazy_static;
 use reqwest;
 use serde::Deserialize;
 use serde::Serialize;
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::LazyLock};
 
-lazy_static! {
-    static ref API_URL: String =
-        std::env::var("RV_API_URL").unwrap_or("http://localhost:4040/api".to_string());
-    static ref RV_TERMINAL_SECRET: String =
-        std::env::var("RV_TERMINAL_SECRET").unwrap_or("unsecure".to_string());
-}
+static API_URL: LazyLock<String> = LazyLock::new(|| {
+    std::env::var("RV_API_URL").unwrap_or("http://localhost:4040/api".to_string())
+});
+static RV_TERMINAL_SECRET: LazyLock<String> =
+    LazyLock::new(|| std::env::var("RV_TERMINAL_SECRET").unwrap_or("unsecure".to_string()));
 
 #[derive(Deserialize)]
 pub struct AuthenticationResponse {

@@ -2,7 +2,6 @@ pub mod input;
 mod rv_api;
 mod user_loop;
 mod utils;
-use lazy_static::lazy_static;
 
 use crossterm::{
     cursor::{self, RestorePosition, SavePosition},
@@ -15,7 +14,10 @@ use crossterm::{
 use rv_api::{login_rfid, ApiResultValue};
 use std::{
     io::{self, stdout, Result, Stdout, Write},
-    sync::mpsc::{Receiver, RecvTimeoutError},
+    sync::{
+        mpsc::{Receiver, RecvTimeoutError},
+        LazyLock,
+    },
     time::Duration,
 };
 use user_loop::RV_LOGO;
@@ -24,12 +26,7 @@ use utils::{printline, ConfirmResult, TimeoutResult};
 pub const INPUT_TIMEOUT_SHORT: Duration = Duration::from_secs(60);
 pub const INPUT_TIMEOUT_LONG: Duration = Duration::from_secs(5 * 60);
 
-lazy_static! {
-    static ref DEVELOPMENT_MODE: bool = match std::env::var("DEVELOPMENT") {
-        Ok(v) => true,
-        Err(_) => false,
-    };
-}
+static DEVELOPMENT_MODE: LazyLock<bool> = LazyLock::new(|| std::env::var("DEVELOPMENT").is_ok());
 
 pub struct TerminalWriter {
     stdout: Stdout,
