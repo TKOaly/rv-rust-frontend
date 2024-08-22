@@ -1582,10 +1582,15 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                                 printline(
                                     terminal_io,
                                     &format!(
-                                        "{} {} {}€",
+                                        "{}{}{} {}€",
                                         DateTime::parse_from_rfc3339(&event.time)
                                             .unwrap()
                                             .format("%d/%m/%Y %H:%M"),
+                                        if event.returned {
+                                            " bought [returned] "
+                                        } else {
+                                            " bought "
+                                        },
                                         event.product.name,
                                         utils::format_money(&event.price)
                                     ),

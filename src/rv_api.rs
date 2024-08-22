@@ -26,6 +26,7 @@ pub struct PurchaseHistoryEvent {
     pub price: i32,
     #[serde(rename = "balanceAfter")]
     pub balance_after: i32,
+    pub returned: bool,
 }
 
 pub fn purchase_history(credentials: &AuthenticationResponse) -> Vec<PurchaseHistoryEvent> {
