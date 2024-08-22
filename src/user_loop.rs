@@ -20,6 +20,7 @@ use crate::utils::TimeoutResult;
 use crate::TerminalIO;
 use crate::INPUT_TIMEOUT_LONG;
 use crate::INPUT_TIMEOUT_SHORT;
+use chrono::DateTime;
 
 use crossterm::queue;
 use crossterm::style::Color;
@@ -36,6 +37,7 @@ use crossterm::{
 use input::InputEvent;
 use regex::Regex;
 use rv_api::ApiResult;
+use std::fmt::format;
 use std::process::exit;
 use std::sync::mpsc::RecvTimeoutError;
 use std::thread::sleep;
@@ -1492,6 +1494,8 @@ fn print_user_loop_instructions(
         Print(" - deposit to your account\r\n"),
         PrintStyledContent("F".dark_green().bold()),
         Print(" - list matching products\r\n"),
+        PrintStyledContent("H".dark_green().bold()),
+        Print(" - show purchase history\r\n"),
         PrintStyledContent("P".dark_green().bold()),
         Print(" - change password\r\n"),
         PrintStyledContent("R".dark_green().bold()),
@@ -1566,6 +1570,27 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                                 TimeoutResult::TIMEOUT => break 'main,
                                 _ => (),
                             }
+                            printline(terminal_io, "");
+                            break;
+                        }
+                        'h' => {
+                            printline(terminal_io, "\n");
+                            print_title(terminal_io, "Recent purchases");
+                            let mut events = rv_api::purchase_history(credentials);
+                            events.sort_by(|a, b| b.time.cmp(&a.time));
+                            events.iter().take(10).rev().for_each(|event| {
+                                printline(
+                                    terminal_io,
+                                    &format!(
+                                        "{} {} {}€",
+                                        DateTime::parse_from_rfc3339(&event.time)
+                                            .unwrap()
+                                            .format("%d/%m/%Y %H:%M"),
+                                        event.product.name,
+                                        utils::format_money(&event.price)
+                                    ),
+                                )
+                            });
                             printline(terminal_io, "");
                             break;
                         }

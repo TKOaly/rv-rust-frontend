@@ -1,6 +1,7 @@
 use reqwest;
 use serde::Deserialize;
 use serde::Serialize;
+use std::string;
 use std::{collections::HashMap, sync::LazyLock};
 
 static API_URL: LazyLock<String> = LazyLock::new(|| {
@@ -13,6 +14,35 @@ static RV_TERMINAL_SECRET: LazyLock<String> =
 pub struct AuthenticationResponse {
     #[serde(rename = "accessToken")]
     access_token: String,
+}
+
+#[derive(Deserialize)]
+
+pub struct PurchaseHistoryEvent {
+    #[serde(rename = "purchaseId")]
+    pub purchase_id: i64,
+    pub time: String,
+    pub product: ProductInfo,
+    pub price: i32,
+    #[serde(rename = "balanceAfter")]
+    pub balance_after: i32,
+}
+
+pub fn purchase_history(credentials: &AuthenticationResponse) -> Vec<PurchaseHistoryEvent> {
+    #[derive(Deserialize)]
+    struct Hax {
+        purchases: Vec<PurchaseHistoryEvent>,
+    }
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .get(format!("{}/v1/user/purchaseHistory", *API_URL))
+        .header(
+            "Authorization",
+            String::from("Bearer ") + &credentials.access_token,
+        )
+        .send()
+        .expect("api error");
+    return resp.json::<Hax>().map(|v| v.purchases).unwrap();
 }
 
 pub fn add_box(
