@@ -10,6 +10,7 @@ use crate::rv_api::ApiResultValue;
 use crate::rv_api::ProductCategory;
 use crate::rv_api::UserInfoTrait;
 use crate::utils::clear_terminal;
+use crate::utils::load_ascii;
 use crate::utils::print_error_line;
 use crate::utils::print_title;
 use crate::utils::printline;
@@ -40,16 +41,14 @@ use rv_api::ApiResult;
 use std::fmt::format;
 use std::process::exit;
 use std::sync::mpsc::RecvTimeoutError;
+use std::sync::LazyLock;
 use std::thread::sleep;
 use std::time::Duration;
-pub static RV_LOGO: &str = " \
-______     __\r\n|  _ \\ \\   / /\r\n| |_) \\ \\ / / \r\n|  _ < \\ V /  \r\n|_| \\_\\ \\_/   \r\n\
-\r\n\
-";
-static PURCHASE_FAILED_MSG1: &str = "          _,.-----.,_                                                                         _,.-----.,_                 \r\n       ,-~           ~-.                                                                   ,-~           ~-.              \r\n      ,^___           ___^.                                                               ,^___           ___^.           \r\n    /~\"   ~\"   .   \"~   \"~\\                                                             /~\"   ~\"   .   \"~   \"~\\           \r\n   Y  ,--._    I    _.--.  Y                                                           Y  ,--._    I    _.--.  Y          \r\n    | Y     ~-. | ,-~     Y |                                                           | Y     ~-. | ,-~     Y |         \r\n    | |        }:{        | |                                                           | |        }:{        | |         \r\n    j l       / | \\       ! l                                                           j l       / | \\       ! l         \r\n .-~  (__,.--\" .^. \"--.,__)  ~-.                                                     .-~  (__,.--\" .^. \"--.,__)  ~-.      \r\n(           / / | \\ \\           )                                                   (           / / | \\ \\           )     \r\n \\.____,   ~  \\/\"\\/  ~   .____,/                                                     \\.____,   ~  \\/\"\\/  ~   .____,/      \r\n  ^.____                 ____.^                                                       ^.____                 ____.^       \r\n     | |T ~\\  !   !  /~ T| |                                                             | |T ~\\  !   !  /~ T| |          \r\n     | |l   _ _ _ _ _   !| |                                                             | |l   _ _ _ _ _   !| |          \r\n     | l \\/V V V V V V\\/ j |                                                             | l \\/V V V V V V\\/ j |          \r\n     l  \\ \\|_|_|_|_|_|/ /  !                                                             l  \\ \\|_|_|_|_|_|/ /  !          \r\n      \\  \\[T T T T T TI/  /                                                               \\  \\[T T T T T TI/  /           \r\n       \\  `^-^-^-^-^-^'  /                                                                 \\  `^-^-^-^-^-^'  /            \r\n        \\               /                                                                   \\               /             \r\n         \\.           ,/                                                                     \\.           ,/              \r\n           \"^-.___,-^\"                                                                         \"^-.___,-^\"                \r\n";
-static PURCHASE_FAILED_MSG2: &str = " ██▓███   █    ██  ██▀███   ▄████▄   ██░ ██  ▄▄▄        ██████ ▓█████      █████▒▄▄▄       ██▓ ██▓    ▓█████ ▓█████▄      \r\n▓██░  ██▒ ██  ▓██▒▓██ ▒ ██▒▒██▀ ▀█  ▓██░ ██▒▒████▄    ▒██    ▒ ▓█   ▀    ▓██   ▒▒████▄    ▓██▒▓██▒    ▓█   ▀ ▒██▀ ██▌     \r\n▓██░ ██▓▒▓██  ▒██░▓██ ░▄█ ▒▒▓█    ▄ ▒██▀▀██░▒██  ▀█▄  ░ ▓██▄   ▒███      ▒████ ░▒██  ▀█▄  ▒██▒▒██░    ▒███   ░██   █▌     \r\n▒██▄█▓▒ ▒▓▓█  ░██░▒██▀▀█▄  ▒▓▓▄ ▄██▒░▓█ ░██ ░██▄▄▄▄██   ▒   ██▒▒▓█  ▄    ░▓█▒  ░░██▄▄▄▄██ ░██░▒██░    ▒▓█  ▄ ░▓█▄   ▌     \r\n▒██▒ ░  ░▒▒█████▓ ░██▓ ▒██▒▒ ▓███▀ ░░▓█▒░██▓ ▓█   ▓██▒▒██████▒▒░▒████▒   ░▒█░    ▓█   ▓██▒░██░░██████▒░▒████▒░▒████▓      \r\n▒▓▒░ ░  ░░▒▓▒ ▒ ▒ ░ ▒▓ ░▒▓░░ ░▒ ▒  ░ ▒ ░░▒░▒ ▒▒   ▓▒█░▒ ▒▓▒ ▒ ░░░ ▒░ ░    ▒ ░    ▒▒   ▓▒█░░▓  ░ ▒░▓  ░░░ ▒░ ░ ▒▒▓  ▒      \r\n░▒ ░     ░░▒░ ░ ░   ░▒ ░ ▒░  ░  ▒    ▒ ░▒░ ░  ▒   ▒▒ ░░ ░▒  ░ ░ ░ ░  ░    ░       ▒   ▒▒ ░ ▒ ░░ ░ ▒  ░ ░ ░  ░ ░ ▒  ▒      \r\n░░        ░░░ ░ ░   ░░   ░ ░         ░  ░░ ░  ░   ▒   ░  ░  ░     ░       ░ ░     ░   ▒    ▒ ░  ░ ░      ░    ░ ░  ░      \r\n            ░        ░     ░ ░       ░  ░  ░      ░  ░      ░     ░  ░                ░  ░ ░      ░  ░   ░  ░   ░         \r\n                           ░                                                                                  ░           \r\n";
+pub static RV_LOGO: LazyLock<String> = load_ascii!("../ascii/logo.txt");
+static PURCHASE_FAILED_MSG1: LazyLock<String> = load_ascii!("../ascii/purchase_failed.txt");
+static PURCHASE_FAILED_MSG2: LazyLock<String> = load_ascii!("../ascii/purchase_failed2.txt");
+static COFFEE_MSG: LazyLock<String> = load_ascii!("../ascii/netlight.txt");
 
-static COFFEE_MSG: &str = "                       ,;;,   ;,\r\n                      ,;;;;   ;;;   \r\n                    ,;;;  ;;,  ;;  \r\n                   ;,       ;’ ;\r\n                           _(\\_/) \r\n                          ,((((^`\\\r\n                         ((((  o  \\ \r\n                       ,((((( ,    \\\r\n   ,,,_              ,(((((  /\"._  ,`, \r\n  ((((\\\\ ,...       ,((((   /    `-.-'   \r\n  )))  ;'    `\"'\"'\"\"((((   (             \r\n (((  /            (((      \\                     Have a coffee with\r\n  )) |                      |            \r\n ((  |        .       '     |     _   _            _     _   _           _        _ \r\n ))  \\     _ '       `   ,.')    | \\ | |          | |   | | (_)         | |      | |\r\n (   |   /;- -,-\"\"'\"-.\\   \\/     |  \\| |   ___   _| |_  | |  _    __ _  | |__   _| |_ \r\n )   / ./  ) /         `\\  \\     | . ` |  / _ \\ |_  __| | | | |  / _` | | '_ \\ |_  __|\r\n    |./   ( (           / /'     | |\\  | |  __/   | |_  | | | | | (_| | | | | |  | |_ \r\n    ||     \\\\          //'|      |_| \\_|  \\___|    \\__| |_| |_|  \\__, | |_| |_|   \\__|\r\n    ||      \\\\       _//'||                                       __/ |\r\n    ||       ))     |_/  ||                                      |___/ \r\n    \\_\\     |_/          || \r\n                         \\_\\ \r\n";
 fn new_product(
     barcode: &str,
     credentials: &rv_api::AuthenticationResponse,
@@ -666,7 +665,7 @@ fn purchase_items(
             let product_info = rv_api::get_product_info(&credentials, &barcode).unwrap();
             if product_info.barcode == "42615374" {
                 // Coffee purchase shill
-                utils::printline(terminal_io, COFFEE_MSG);
+                utils::printline(terminal_io, &COFFEE_MSG);
             }
             utils::printline(
                 terminal_io,
@@ -685,8 +684,8 @@ fn purchase_items(
             utils::set_small_font();
             execute!(
                 terminal_io.writer,
-                PrintStyledContent(PURCHASE_FAILED_MSG1.green()),
-                PrintStyledContent(PURCHASE_FAILED_MSG2.red()),
+                PrintStyledContent(PURCHASE_FAILED_MSG1.to_string().green()),
+                PrintStyledContent(PURCHASE_FAILED_MSG2.to_string().red()),
                 Print("\r\n"),
                 Print(&format!("Dear {}, your purchase has", user_info.username)),
                 PrintStyledContent(" FAILED ".red()),
@@ -1354,7 +1353,7 @@ fn management_mode_loop(
         queue!(
             terminal_io.writer,
             cursor::MoveTo(0, terminal::size()?.1),
-            PrintStyledContent(RV_LOGO.yellow()),
+            PrintStyledContent(RV_LOGO.to_string().yellow()),
             Print("=== management mode ===\r\n"),
             PrintStyledContent("<barcode>".dark_green().bold()),
             Print(" - IF FOUND update price and count ELSE add as a new item/box\r\n"),
@@ -1489,7 +1488,7 @@ fn print_user_loop_instructions(
     queue!(
         terminal_io.writer,
         cursor::MoveTo(0, terminal::size()?.1),
-        Print(RV_LOGO.yellow()),
+        Print(RV_LOGO.to_string().yellow()),
         Print("Available commands (press key to select):\r\n"),
         PrintStyledContent("<barcode>".dark_green()),
         Print(" - buy this item\r\n"),

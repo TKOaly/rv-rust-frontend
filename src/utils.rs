@@ -18,10 +18,17 @@ use core::str;
 use std::{
     fs,
     process::{Command, ExitStatus},
-    sync::mpsc::RecvTimeoutError,
+    sync::{mpsc::RecvTimeoutError, LazyLock},
     thread::{self, sleep},
     time::Duration,
 };
+
+macro_rules! load_ascii {
+    ($name:expr) => {
+        LazyLock::new(|| include_str!($name).replace("\n", "\r\n"))
+    };
+}
+pub(crate) use load_ascii;
 
 pub fn format_money(cents: &i32) -> String {
     format!(

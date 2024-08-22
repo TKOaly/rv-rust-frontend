@@ -190,7 +190,7 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
             Print("enter username: "),
             SavePosition,
             cursor::MoveTo(0, 3),
-            PrintStyledContent(RV_LOGO.yellow()),
+            PrintStyledContent(RV_LOGO.to_string().yellow()),
             RestorePosition
         )?;
         let mut username = String::new();
