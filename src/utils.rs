@@ -56,7 +56,12 @@ mod tests {
 }
 
 pub fn set_small_font() {
-    let output = Command::new("setfont").arg("Uni2-VGA16").output().unwrap();
+    let output = Command::new("setfont")
+        .arg("Uni2-VGA16")
+        .arg("-C")
+        .arg("/dev/tty1")
+        .output()
+        .unwrap();
     if !ExitStatus::success(&output.status) {
         eprintln!(
             "Setfont exit code {}\n stderr: {}",
@@ -67,7 +72,9 @@ pub fn set_small_font() {
 }
 pub fn set_big_font() {
     let output = Command::new("setfont")
-        .arg("Uni2-VGA32x16")
+        .arg("Uni2-VGA28x16")
+        .arg("-C")
+        .arg("/dev/tty1")
         .output()
         .unwrap();
     if !ExitStatus::success(&output.status) {
