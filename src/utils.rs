@@ -57,7 +57,7 @@ mod tests {
 
 pub fn set_small_font() {
     let output = Command::new("setfont")
-        .arg("Uni2-VGA16")
+        .arg("Uni2-VGA16.psf.gz")
         .arg("-C")
         .arg("/dev/tty1")
         .output()
@@ -72,7 +72,7 @@ pub fn set_small_font() {
 }
 pub fn set_big_font() {
     let output = Command::new("setfont")
-        .arg("Uni2-VGA28x16")
+        .arg("Uni2-VGA28x16.psf.gz")
         .arg("-C")
         .arg("/dev/tty1")
         .output()
