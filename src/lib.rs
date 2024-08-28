@@ -199,7 +199,7 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
             .for_each(|(idx, val)| {
                 queue!(
                     terminal_io.writer,
-                    cursor::MoveTo(30, idx as u16 + 5),
+                    cursor::MoveTo(68, idx as u16 + 5),
                     Print(format!(
                         "{:<20} | {:>6}",
                         val.name.chars().take(20).collect::<String>(),
