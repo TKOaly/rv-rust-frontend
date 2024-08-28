@@ -1504,6 +1504,8 @@ fn print_user_loop_instructions(
         Print(" - change password\r\n"),
         PrintStyledContent("R".dark_green().bold()),
         Print(" - manage your rfid\r\n"),
+        PrintStyledContent("V".dark_green().bold()),
+        Print(" - change privacy\r\n"),
         PrintStyledContent("U".dark_green().bold()),
         Print(" - undo a recent purchase\r\n"),
         PrintStyledContent("<enter>".dark_green().bold()),
@@ -1637,6 +1639,62 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                             match return_purchase(terminal_io, credentials) {
                                 TimeoutResult::TIMEOUT => break 'main,
                                 _ => (),
+                            }
+                            printline(terminal_io, "");
+                            break;
+                        }
+                        'v' => {
+                            printline(terminal_io, "\n");
+                            utils::print_title(terminal_io, "Privacy Settings");
+                            printline(terminal_io, "Change the account's privacy level");
+                            printline(terminal_io, "0 = No restrictions");
+                            printline(
+                                terminal_io,
+                                "1 = Hide username from public (for example, leaderboards)",
+                            );
+                            printline(terminal_io,"2 = Hide all data from public (for example, list of recent purchases)" );
+                            printline(terminal_io, "<Enter> do not change");
+                            loop {
+                                match terminal_io.recv.recv_timeout(INPUT_TIMEOUT_SHORT) {
+                                    Ok(input::InputEvent::Terminal(Event::Key(ev))) => {
+                                        match ev.code {
+                                            KeyCode::Char(c) => match c {
+                                                '0' => {
+                                                    rv_api::change_privacy_level(credentials, 0)
+                                                        .unwrap();
+                                                    printline(
+                                                        terminal_io,
+                                                        "Changed privacy level to 0",
+                                                    );
+                                                    break;
+                                                }
+                                                '1' => {
+                                                    rv_api::change_privacy_level(credentials, 1)
+                                                        .unwrap();
+                                                    printline(
+                                                        terminal_io,
+                                                        "Changed privacy level to 1",
+                                                    );
+                                                    break;
+                                                }
+                                                '2' => {
+                                                    rv_api::change_privacy_level(credentials, 2)
+                                                        .unwrap();
+                                                    printline(
+                                                        terminal_io,
+                                                        "Changed privacy level to 2",
+                                                    );
+                                                    break;
+                                                }
+                                                _ => (),
+                                            },
+                                            KeyCode::Enter => break,
+                                            _ => (),
+                                        }
+                                    }
+                                    Err(RecvTimeoutError::Timeout) => break 'main,
+                                    _ => (),
+                                }
                             }
                             printline(terminal_io, "");
                             break;

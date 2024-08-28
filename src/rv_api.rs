@@ -212,6 +212,32 @@ pub fn get_user_info(credentials: &AuthenticationResponse) -> Result<UserInfo, r
     return resp.json::<Hax>().map(|v| v.user);
 }
 
+pub fn change_privacy_level(
+    credentials: &AuthenticationResponse,
+    privacy_level: i32,
+) -> Result<ApiResult, reqwest::Error> {
+    let client = reqwest::blocking::Client::new();
+    #[derive(Serialize)]
+    struct Body {
+        #[serde(rename = "privacyLevel")]
+        privacy_level: i32,
+    };
+    let hm: Body = Body { privacy_level };
+    let resp = client
+        .post(format!("{}/v1/user/changePrivacyLevel", *API_URL))
+        .header(
+            "Authorization",
+            String::from("Bearer ") + &credentials.access_token,
+        )
+        .json(&hm)
+        .send()
+        .expect("api error");
+    Ok(match resp.status().as_u16() {
+        203 => ApiResult::Success,
+        code => ApiResult::Fail(format!("http response {code}")),
+    })
+}
+
 pub fn get_user_info_by_username(
     credentials: &AuthenticationResponse,
     username: &str,
