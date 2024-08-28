@@ -212,6 +212,24 @@ pub fn get_user_info(credentials: &AuthenticationResponse) -> Result<UserInfo, r
     return resp.json::<Hax>().map(|v| v.user);
 }
 
+#[derive(Deserialize)]
+pub struct LeaderboardRow {
+    pub saldo: i32,
+    pub name: String,
+}
+pub fn get_leaderboard() -> Result<ApiResultValue<Vec<LeaderboardRow>>, reqwest::Error> {
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .get(format!("{}/v1/statistics/leaderboard", *API_URL))
+        .header("RV-Terminal-Secret", RV_TERMINAL_SECRET.as_str())
+        .send()
+        .expect("api error");
+    Ok(match resp.status().as_u16() {
+        200 => ApiResultValue::Success(resp.json::<Vec<LeaderboardRow>>().unwrap()),
+        code => ApiResultValue::Fail(format!("http response {code}")),
+    })
+}
+
 pub fn change_privacy_level(
     credentials: &AuthenticationResponse,
     privacy_level: i32,

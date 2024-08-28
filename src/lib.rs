@@ -6,7 +6,7 @@ mod utils;
 use crossterm::{
     cursor::{self, RestorePosition, SavePosition},
     event::{Event, KeyCode},
-    execute,
+    execute, queue,
     style::{Print, PrintStyledContent, Stylize},
     terminal::{self, enable_raw_mode, EnterAlternateScreen},
 };
@@ -184,6 +184,31 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
             terminal::Clear(terminal::ClearType::All),
             cursor::MoveTo(0, terminal::size()?.1)
         )?;
+        let leaderboard = match rv_api::get_leaderboard().unwrap() {
+            ApiResultValue::Success(v) => v,
+            ApiResultValue::Fail(err) => {
+                utils::print_error_line(terminal_io, &err);
+                continue;
+            }
+        };
+        execute!(terminal_io.writer, SavePosition).unwrap();
+        leaderboard
+            .iter()
+            .take(20)
+            .enumerate()
+            .for_each(|(idx, val)| {
+                queue!(
+                    terminal_io.writer,
+                    cursor::MoveTo(30, idx as u16 + 5),
+                    Print(format!(
+                        "{:<20} | {:>6}",
+                        val.name.chars().take(20).collect::<String>(),
+                        utils::format_money(&val.saldo)
+                    ))
+                )
+                .unwrap();
+            });
+        execute!(terminal_io.writer, RestorePosition).unwrap();
         execute!(
             terminal_io.writer,
             Print("to log in or register\r\n"),
