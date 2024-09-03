@@ -1705,15 +1705,15 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                             // Legacy behavior wanted by some old users, need not to show in the list of commands
                             break 'main; // Logout
                         }
-                        '0'..='9' => {
-                            terminal_io.writer.execute(Print(c)).unwrap();
-                            command.push(c);
-                        }
                         'c' => {
                             // Clear current terminal view
                             // Useful after registering, if you want to see the list of commands
                             // after logging in
                             break user_loop(credentials, terminal_io);
+                        }
+                        '0'..='9' => {
+                            terminal_io.writer.execute(Print(c)).unwrap();
+                            command.push(c);
                         }
                         _ => (),
                     },
