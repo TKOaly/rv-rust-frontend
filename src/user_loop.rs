@@ -1508,6 +1508,8 @@ fn print_user_loop_instructions(
         Print(" - change privacy\r\n"),
         PrintStyledContent("U".dark_green().bold()),
         Print(" - undo a recent purchase\r\n"),
+        PrintStyledContent("C".dark_green().bold()),
+        Print(" - clear terminal\r\n"),
         PrintStyledContent("<enter>".dark_green().bold()),
         Print(" - log out\r\n"),
     )
@@ -1706,6 +1708,12 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                         '0'..='9' => {
                             terminal_io.writer.execute(Print(c)).unwrap();
                             command.push(c);
+                        }
+                        'c' => {
+                            // Clear current terminal view
+                            // Useful after registering, if you want to see the list of commands
+                            // after logging in
+                            break user_loop(credentials, terminal_io);
                         }
                         _ => (),
                     },
