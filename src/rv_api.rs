@@ -796,6 +796,7 @@ pub fn register(
     let client = reqwest::blocking::Client::new();
     let resp = client
         .post(format!("{}/v1/register", *API_URL))
+        .header("RV-Terminal-Secret", RV_TERMINAL_SECRET.as_str())
         .json(&HashMap::from([
             ("username", &username),
             ("password", &password),
