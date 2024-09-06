@@ -1508,6 +1508,8 @@ fn print_user_loop_instructions(
         Print(" - change privacy\r\n"),
         PrintStyledContent("U".dark_green().bold()),
         Print(" - undo a recent purchase\r\n"),
+        PrintStyledContent("C".dark_green().bold()),
+        Print(" - clear terminal\r\n"),
         PrintStyledContent("<enter>".dark_green().bold()),
         Print(" - log out\r\n"),
     )
@@ -1522,7 +1524,7 @@ fn print_user_loop_instructions(
     }
 }
 
-pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut TerminalIO) {
+pub fn print_user_loop_banner(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut TerminalIO) {
     execute!(
         terminal_io.writer,
         terminal::Clear(terminal::ClearType::All)
@@ -1530,6 +1532,11 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
     .unwrap();
     print_user_loop_instructions(credentials, terminal_io);
     printline(terminal_io, "");
+}
+
+pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut TerminalIO) {
+    print_user_loop_banner(credentials, terminal_io);
+
     'main: loop {
         let user_info = rv_api::get_user_info(&credentials).unwrap();
         execute!(
@@ -1702,6 +1709,12 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                         'q' => {
                             // Legacy behavior wanted by some old users, need not to show in the list of commands
                             break 'main; // Logout
+                        }
+                        'c' => {
+                            // Clear current terminal view
+                            // Useful after registering, if you want to see the list of commands
+                            // after logging in
+                            break print_user_loop_banner(credentials, terminal_io);
                         }
                         '0'..='9' => {
                             terminal_io.writer.execute(Print(c)).unwrap();
