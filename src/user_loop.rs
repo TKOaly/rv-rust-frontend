@@ -23,6 +23,7 @@ use crate::INPUT_TIMEOUT_LONG;
 use crate::INPUT_TIMEOUT_SHORT;
 use chrono::DateTime;
 
+use chrono::Local;
 use crossterm::queue;
 use crossterm::style::Color;
 use crossterm::style::PrintStyledContent;
@@ -1015,6 +1016,8 @@ fn deposit(
                 } else if s == "cash" {
                     rv_api::deposit(&credentials, &amount, "cash").unwrap();
                     utils::printline(terminal_io, "Remember to put cash in an envelope or send an email immediately to rahastonhoitaja@tko-aly.fi to explain a non-envelope deposit.");
+                    utils::printline(terminal_io, &format!("Current date: {}", Local::now().format("%d/%m/%Y")).to_string());
+
                     utils::confirm_enter_to_continue(terminal_io);
                     break;
                 } else if s == "bank" {
