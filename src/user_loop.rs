@@ -555,7 +555,7 @@ fn buy_in_product(
             .expect("")
             .is_match(&input_line)
         {
-            buy_price = input_line.replace(".", "").parse().unwrap();
+            sell_price = input_line.replace(".", "").parse().unwrap();
             break;
         } else {
             print_error_line(terminal_io, "Invalid price entered, please retry!\n");
@@ -1255,7 +1255,7 @@ fn change_product_properties(
             .expect("")
             .is_match(&input_line)
         {
-            buy_price = input_line.replace(".", "").parse().unwrap();
+            sell_price = input_line.replace(".", "").parse().unwrap();
             break;
         } else {
             print_error_line(terminal_io, "Invalid price entered, please retry!\n");
