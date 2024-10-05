@@ -353,19 +353,21 @@ fn buy_in_box(
     utils::printline(terminal_io, "Adding new box to stock.");
     let mut buy_price = box_.product.buy_price;
     let mut buy_price_changed = false;
+    
+    utils::printline(
+        terminal_io,
+        &format!(
+            "Current item buyprice: {}",
+            &utils::format_money(&buy_price)
+        ),
+    );
     loop {
         utils::printline(
             terminal_io,
             "Enter box buyprice. Format: [0-9]+\\.[0-9][0-9]",
         );
         utils::printline(terminal_io, "At least one number, followed by period, followed by two numbers. For example: '1.00', '0.01', '14.42'");
-        utils::printline(
-            terminal_io,
-            &format!(
-                "Modify or keep [{}]:",
-                &utils::format_money(&(buy_price * box_.items_per_box))
-            ),
-        );
+
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
             TimeoutResult::RESULT(s) => s,
@@ -377,9 +379,17 @@ fn buy_in_box(
             .expect("")
             .is_match(&input_line)
         {
-            buy_price = input_line.replace(".", "").parse().unwrap();
-            buy_price = (buy_price + (box_.items_per_box - 1)) / box_.items_per_box; // ceil
+            let box_buy_price = input_line.replace(".", "").parse::<i32>().unwrap();
+            buy_price = (box_buy_price as f64 / box_.items_per_box as f64).ceil() as i32;
             buy_price_changed = true;
+
+            utils::printline(
+                terminal_io,
+                &format!(
+                    "Calculated new item buyprice: {}",
+                    &utils::format_money(&buy_price)
+                ),
+            );
             break;
         } else {
             print_error_line(terminal_io, "Invalid price entered, please retry!\n");
@@ -389,7 +399,7 @@ fn buy_in_box(
 
     let mut sell_price = box_.product.sell_price;
     loop {
-        utils::printline(terminal_io, "\r\nEnter box sellprice.");
+        utils::printline(terminal_io, "\r\nEnter item sellprice.");
         if buy_price_changed {
             let margin = rv_api::get_margin(&credentials).unwrap() as f64;
             let margin_pretty = format!("{}%", (margin * 100.0).ceil());
@@ -398,7 +408,7 @@ fn buy_in_box(
                 terminal_io,
                 &format!(
                     "Suggest {} calculated with the margin of {}",
-                    &utils::format_money(&(sell_price * box_.items_per_box)),
+                    &utils::format_money(&sell_price),
                     margin_pretty
                 ),
             );
@@ -407,7 +417,7 @@ fn buy_in_box(
             terminal_io,
             &format!(
                 "Modify or keep [{}]:",
-                &utils::format_money(&(sell_price * box_.items_per_box)),
+                &utils::format_money(&sell_price),
             ),
         );
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
@@ -426,7 +436,6 @@ fn buy_in_box(
             .is_match(&input_line)
         {
             sell_price = input_line.replace(".", "").parse().unwrap();
-            sell_price = (sell_price + (box_.items_per_box - 1)) / box_.items_per_box; // ceil
             break;
         } else {
             print_error_line(terminal_io, "Invalid price entered, please retry!\n");
