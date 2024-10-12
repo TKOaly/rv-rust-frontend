@@ -357,8 +357,10 @@ fn buy_in_box(
     utils::printline(
         terminal_io,
         &format!(
-            "Current item buyprice: {}",
-            &utils::format_money(&buy_price)
+            "Current item buyprice: {} x {} = {}",
+            &utils::format_money(&buy_price),
+            box_.items_per_box,
+            &utils::format_money(&(box_.items_per_box * buy_price))
         ),
     );
     loop {
