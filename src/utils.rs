@@ -157,6 +157,31 @@ pub fn confirm(terminal_io: &mut TerminalIO) -> Result<ConfirmResult, std::io::E
     }
 }
 
+// Returns default if enter is pressed
+pub fn confirm_with_default(terminal_io: &mut TerminalIO, default: ConfirmResult) -> Result<ConfirmResult, std::io::Error> {
+    loop {
+        match terminal_io.recv.recv_timeout(INPUT_TIMEOUT_SHORT) {
+            Ok(InputEvent::Terminal(Event::Key(KeyEvent {
+                code: KeyCode::Char(c),
+                ..
+            }))) => match c {
+                'Y' | 'y' => return Ok(ConfirmResult::YES),
+                'N' | 'n' => return Ok(ConfirmResult::NO),
+                _ => (),
+            },
+            Ok(InputEvent::Terminal(Event::Key(KeyEvent {
+                code: KeyCode::Enter,
+                ..
+            }))) => {
+                return Ok(default)
+            }
+            Err(RecvTimeoutError::Timeout) => return Ok(ConfirmResult::TIMEOUT),
+            Err(RecvTimeoutError::Disconnected) => panic!(),
+            _ => (),
+        }
+    }
+}
+
 pub fn clear_terminal(terminal_io: &mut TerminalIO) {
     execute!(
         terminal_io.writer,

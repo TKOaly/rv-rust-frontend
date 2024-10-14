@@ -71,7 +71,7 @@ fn register(username: &str, terminal_io: &mut TerminalIO) -> TimeoutResult<()> {
         terminal_io,
         &format!("\r\nuser {username} does not exist, create a new user? [yN]"),
     );
-    match utils::confirm(terminal_io).unwrap() {
+    match utils::confirm_with_default(terminal_io, ConfirmResult::NO).unwrap() {
         ConfirmResult::YES => (),
         ConfirmResult::NO => {
             utils::printline(terminal_io, "Aborting!");
@@ -90,7 +90,7 @@ fn register(username: &str, terminal_io: &mut TerminalIO) -> TimeoutResult<()> {
                 Print(&format!(
                         "\r\n\
                         I am a member of TKO-äly ry and I understand that this service is intended\r\n\
-                        ONLY for the use of the members of TKO-äly ry. [yN]\r\n\
+                        ONLY for the use of the members of TKO-äly ry. [yn]\r\n\
                         "
                 ))
             ).unwrap();
