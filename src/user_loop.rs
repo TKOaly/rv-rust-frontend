@@ -1612,6 +1612,7 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                                         "{}{}{} {}€",
                                         DateTime::parse_from_rfc3339(&event.time)
                                             .unwrap()
+                                            .with_timezone(&chrono::offset::Local)
                                             .format("%d/%m/%Y %H:%M"),
                                         if event.returned {
                                             " bought [returned] "
