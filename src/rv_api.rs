@@ -439,11 +439,24 @@ pub fn return_product(
     }
 }
 
+pub enum ApiResultPurchaseItemFailType {
+    BarcodeNotFound,
+    InsufficientFunds,
+    Other,
+}
+pub struct ApiResultPurchaseItemFail {
+    pub message: String,
+    pub error_type: ApiResultPurchaseItemFailType,
+}
+pub enum ApiResultPurchaseItem {
+    Success,
+    Fail(ApiResultPurchaseItemFail),
+}
 pub fn purchase_item(
     credentials: &AuthenticationResponse,
     barcode: &str,
     count: &i32,
-) -> Result<ApiResult, reqwest::Error> {
+) -> Result<ApiResultPurchaseItem, reqwest::Error> {
     let client = reqwest::blocking::Client::new();
     let resp = client
         .post(format!("{}/v1/products/{barcode}/purchase", *API_URL))
@@ -456,20 +469,63 @@ pub fn purchase_item(
         .expect("api error");
 
     match resp.status().as_u16() {
-        200 => Ok(ApiResult::Success),
-        404 => Ok(ApiResult::Fail(format!(
-            "No product with barcode {barcode} found!"
-        ))),
-        403 => Ok(ApiResult::Fail({
+        200 => Ok(ApiResultPurchaseItem::Success),
+        404 => {
             #[derive(Deserialize)]
             struct Hax {
                 message: String,
+                error_code: String,
             }
-            resp.json::<Hax>()
-                .map(|v| v.message)
-                .unwrap_or("unknown 403 error".to_string())
+            return Ok(resp
+                .json::<Hax>()
+                .map(|v| {
+                    if v.error_code == "not_found" {
+                        ApiResultPurchaseItem::Fail(ApiResultPurchaseItemFail {
+                            message: format!("No product with barcode {barcode} found!"),
+                            error_type: ApiResultPurchaseItemFailType::BarcodeNotFound,
+                        })
+                    } else {
+                        ApiResultPurchaseItem::Fail(ApiResultPurchaseItemFail {
+                            message: format!("unknown 404 error"),
+                            error_type: ApiResultPurchaseItemFailType::Other,
+                        })
+                    }
+                })
+                .unwrap_or(ApiResultPurchaseItem::Fail(ApiResultPurchaseItemFail {
+                    message: format!("unknown 404 error"),
+                    error_type: ApiResultPurchaseItemFailType::Other,
+                })));
+        }
+        403 => {
+            #[derive(Deserialize)]
+            struct Hax {
+                message: String,
+                error_code: String,
+            }
+            return Ok(resp
+                .json::<Hax>()
+                .map(|v| {
+                    if v.error_code == "insufficient_funds" {
+                        ApiResultPurchaseItem::Fail(ApiResultPurchaseItemFail {
+                            message: v.message,
+                            error_type: ApiResultPurchaseItemFailType::InsufficientFunds,
+                        })
+                    } else {
+                        ApiResultPurchaseItem::Fail(ApiResultPurchaseItemFail {
+                            message: format!("unknown 403 error"),
+                            error_type: ApiResultPurchaseItemFailType::Other,
+                        })
+                    }
+                })
+                .unwrap_or(ApiResultPurchaseItem::Fail(ApiResultPurchaseItemFail {
+                    message: format!("unknown 403 error"),
+                    error_type: ApiResultPurchaseItemFailType::Other,
+                })));
+        }
+        code => Ok(ApiResultPurchaseItem::Fail(ApiResultPurchaseItemFail {
+            message: format!("http response {code}"),
+            error_type: ApiResultPurchaseItemFailType::Other,
         })),
-        code => Ok(ApiResult::Fail(format!("http response {code}"))),
     }
 }
 

@@ -6,6 +6,8 @@ use crate::rv_api::get_product_info;
 use crate::rv_api::get_user_info;
 use crate::rv_api::return_product;
 use crate::rv_api::update_box;
+use crate::rv_api::ApiResultPurchaseItem;
+use crate::rv_api::ApiResultPurchaseItemFailType;
 use crate::rv_api::ApiResultValue;
 use crate::rv_api::ProductCategory;
 use crate::rv_api::UserInfoTrait;
@@ -353,7 +355,7 @@ fn buy_in_box(
     utils::printline(terminal_io, "Adding new box to stock.");
     let mut buy_price = box_.product.buy_price;
     let mut buy_price_changed = false;
-    
+
     utils::printline(
         terminal_io,
         &format!(
@@ -417,10 +419,7 @@ fn buy_in_box(
         }
         utils::printline(
             terminal_io,
-            &format!(
-                "Modify or keep [{}]:",
-                &utils::format_money(&sell_price),
-            ),
+            &format!("Modify or keep [{}]:", &utils::format_money(&sell_price)),
         );
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
@@ -673,7 +672,7 @@ fn purchase_items(
     credentials: &rv_api::AuthenticationResponse,
 ) {
     match rv_api::purchase_item(&credentials, &barcode, &count).unwrap() {
-        ApiResult::Success => {
+        ApiResultPurchaseItem::Success => {
             let product_info = rv_api::get_product_info(&credentials, &barcode).unwrap();
             if product_info.barcode == "42615374" {
                 // Coffee purchase shill
@@ -689,8 +688,8 @@ fn purchase_items(
                     utils::format_money(&(count * product_info.price))
                 ),
             );
-        }
-        ApiResult::Fail(msg) => {
+        },
+        ApiResultPurchaseItem::Fail(x) => {
             purchase_fail_bell();
             let user_info = get_user_info(credentials).unwrap();
             utils::set_small_font();
@@ -701,11 +700,15 @@ fn purchase_items(
                 Print("\r\n"),
                 Print(&format!("Dear {}, your purchase has", user_info.username)),
                 PrintStyledContent(" FAILED ".red()),
-                Print(&format!("with an error: {msg}\r\n")),
-                Print("You must wait 15 seconds before you can proceed!\r\n"),
+Print(&format!("with an error: {}\r\n", x.message))
             )
             .unwrap();
-            sleep(Duration::from_secs(15));
+            let wait_seconds = match x.error_type {
+                ApiResultPurchaseItemFailType::InsufficientFunds => 15,
+                _ => 5
+            };
+            sleep(Duration::from_secs(wait_seconds));
+            Print(format!("You must wait {wait_seconds} seconds before you can proceed!\r\n"));
             while terminal_io.recv.try_recv().is_ok() {
                 // Discard all input until channel is empty
             }
@@ -1027,7 +1030,10 @@ fn deposit(
                 } else if s == "cash" {
                     rv_api::deposit(&credentials, &amount, "cash").unwrap();
                     utils::printline(terminal_io, "Remember to put cash in an envelope or send an email immediately to rahastonhoitaja@tko-aly.fi to explain a non-envelope deposit.");
-                    utils::printline(terminal_io, &format!("Current date: {}", Local::now().format("%d/%m/%Y")).to_string());
+                    utils::printline(
+                        terminal_io,
+                        &format!("Current date: {}", Local::now().format("%d/%m/%Y")).to_string(),
+                    );
 
                     utils::confirm_enter_to_continue(terminal_io);
                     break;
@@ -1538,7 +1544,10 @@ fn print_user_loop_instructions(
     }
 }
 
-pub fn print_user_loop_banner(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut TerminalIO) {
+pub fn print_user_loop_banner(
+    credentials: &rv_api::AuthenticationResponse,
+    terminal_io: &mut TerminalIO,
+) {
     execute!(
         terminal_io.writer,
         terminal::Clear(terminal::ClearType::All)
