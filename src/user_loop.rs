@@ -311,12 +311,12 @@ fn new_item(
                     utils::printline(terminal_io, "Cancelled!");
                     return TimeoutResult::RESULT(());
                 }
-                KeyCode::Char(c) => match c {
-                    'b' | 'B' => {
+                KeyCode::Char(c) => match c.to_ascii_lowercase() {
+                    'b' => {
                         utils::printline(terminal_io, "");
                         return new_box(barcode, credentials, terminal_io);
                     }
-                    'p' | 'P' => {
+                    'p' => {
                         utils::printline(terminal_io, "");
                         return new_product(barcode, credentials, terminal_io);
                     }
@@ -1402,7 +1402,7 @@ fn management_mode_loop(
             match terminal_io.recv.recv_timeout(INPUT_TIMEOUT_LONG) {
                 Err(RecvTimeoutError::Timeout) => return TimeoutResult::TIMEOUT,
                 Ok(InputEvent::Terminal(Event::Key(ev))) => match ev.code {
-                    KeyCode::Char(c) => match c {
+                    KeyCode::Char(c) => match c.to_ascii_lowercase() {
                         'f' => {
                             printline(terminal_io, "\n");
                             match search_products(terminal_io, credentials) {
@@ -1581,7 +1581,7 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                     break 'main;
                 }
                 Ok(input::InputEvent::Terminal(Event::Key(ev))) => match ev.code {
-                    KeyCode::Char(c) => match c {
+                    KeyCode::Char(c) => match c.to_ascii_lowercase() {
                         'b' => {
                             printline(terminal_io, "\n");
                             match multibuy(terminal_io, credentials) {
