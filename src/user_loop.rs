@@ -18,7 +18,6 @@ use crate::utils::print_title;
 use crate::utils::printline;
 use crate::utils::purchase_fail_bell;
 use crate::utils::readline;
-use crate::utils::set_big_font;
 use crate::utils::TimeoutResult;
 use crate::TerminalIO;
 use crate::INPUT_TIMEOUT_LONG;
@@ -144,7 +143,10 @@ fn new_product(
     printline(terminal_io, "");
     let stock = loop {
         let suggested_stock = 0;
-        utils::printline(terminal_io, "Enter item stock. Format: [0-9]+");
+        utils::printline(
+            terminal_io,
+            "Enter item stock. Format: [0-9]+ or [0.9]+\\*[0.9]+",
+        );
         utils::printline(terminal_io, &format!("Modify or keep [{suggested_stock}]"));
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
@@ -153,10 +155,14 @@ fn new_product(
         if input_line.len() == 0 {
             printline(terminal_io, "Nothing changed.");
             break suggested_stock;
-        } else if Regex::new("^[0-9]+").expect("").is_match(&input_line) {
-            break input_line.parse().unwrap();
-        } else {
-            print_error_line(terminal_io, "Invalid stock entered, please retry!\n");
+        }
+        match utils::calculator_input(&input_line) {
+            Some(stock) => {
+                break stock;
+            }
+            None => {
+                print_error_line(terminal_io, "Invalid stock entered, please retry!\n");
+            }
         }
     };
     printline(terminal_io, "");
@@ -573,15 +579,26 @@ fn buy_in_product(
     }
     printline(terminal_io, "");
     let count = loop {
-        utils::printline(terminal_io, "How many products to add? Format: [0-9]+");
+        utils::printline(
+            terminal_io,
+            "How many products to add? Format: [0-9]+ or [0-9]+\\*[0-9]+",
+        );
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
             TimeoutResult::RESULT(s) => s,
         };
-        if Regex::new("^[0-9]+").expect("").is_match(&input_line) {
-            break input_line.parse().unwrap();
-        } else {
-            print_error_line(terminal_io, "Invalid count entered, please retry!\n");
+
+        if input_line.len() == 0 {
+            break 0;
+        }
+
+        match utils::calculator_input(&input_line) {
+            Some(count) => {
+                break count;
+            }
+            None => {
+                print_error_line(terminal_io, "Invalid count entered, please retry!\n");
+            }
         }
     };
     printline(terminal_io, "");
@@ -688,7 +705,7 @@ fn purchase_items(
                     utils::format_money(&(count * product_info.price))
                 ),
             );
-        },
+        }
         ApiResultPurchaseItem::Fail(x) => {
             purchase_fail_bell();
             let user_info = get_user_info(credentials).unwrap();
@@ -700,15 +717,17 @@ fn purchase_items(
                 Print("\r\n"),
                 Print(&format!("Dear {}, your purchase has", user_info.username)),
                 PrintStyledContent(" FAILED ".red()),
-Print(&format!("with an error: {}\r\n", x.message))
+                Print(&format!("with an error: {}\r\n", x.message))
             )
             .unwrap();
             let wait_seconds = match x.error_type {
                 ApiResultPurchaseItemFailType::InsufficientFunds => 15,
-                _ => 5
+                _ => 5,
             };
             sleep(Duration::from_secs(wait_seconds));
-            Print(format!("You must wait {wait_seconds} seconds before you can proceed!\r\n"));
+            Print(format!(
+                "You must wait {wait_seconds} seconds before you can proceed!\r\n"
+            ));
             while terminal_io.recv.try_recv().is_ok() {
                 // Discard all input until channel is empty
             }

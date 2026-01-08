@@ -15,6 +15,7 @@ pub enum TimeoutResult<T> {
 }
 
 use core::str;
+use regex::Regex;
 use std::{
     fs,
     process::{Command, ExitStatus},
@@ -158,7 +159,10 @@ pub fn confirm(terminal_io: &mut TerminalIO) -> Result<ConfirmResult, std::io::E
 }
 
 // Returns default if enter is pressed
-pub fn confirm_with_default(terminal_io: &mut TerminalIO, default: ConfirmResult) -> Result<ConfirmResult, std::io::Error> {
+pub fn confirm_with_default(
+    terminal_io: &mut TerminalIO,
+    default: ConfirmResult,
+) -> Result<ConfirmResult, std::io::Error> {
     loop {
         match terminal_io.recv.recv_timeout(INPUT_TIMEOUT_SHORT) {
             Ok(InputEvent::Terminal(Event::Key(KeyEvent {
@@ -172,9 +176,7 @@ pub fn confirm_with_default(terminal_io: &mut TerminalIO, default: ConfirmResult
             Ok(InputEvent::Terminal(Event::Key(KeyEvent {
                 code: KeyCode::Enter,
                 ..
-            }))) => {
-                return Ok(default)
-            }
+            }))) => return Ok(default),
             Err(RecvTimeoutError::Timeout) => return Ok(ConfirmResult::TIMEOUT),
             Err(RecvTimeoutError::Disconnected) => panic!(),
             _ => (),
@@ -247,4 +249,28 @@ fn readline_internal(
     }
     printline(terminal_io, "");
     Ok(TimeoutResult::RESULT(ret.trim().to_string()))
+}
+
+pub fn calculator_input(input: &str) -> Option<i32> {
+    if input.is_empty() {
+        return None;
+    }
+
+    let caps = Regex::new("^(?<lhs>[0-9]+)(?:\\*(?<rhs>[0-9]+))?$")
+        .unwrap()
+        .captures(&input);
+
+    if let Some(caps) = caps {
+        let lhs = caps["lhs"].parse::<i32>().ok()?;
+
+        if caps.name("rhs").is_none() {
+            return Some(lhs);
+        }
+
+        let rhs = caps["rhs"].parse::<i32>().ok()?;
+
+        return Some(lhs * rhs);
+    }
+
+    None
 }
