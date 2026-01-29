@@ -417,7 +417,7 @@ pub fn change_email(
 ) -> Result<ApiResult, reqwest::Error> {
     let client = reqwest::blocking::Client::new();
     let resp = client
-        .post(format!("{}/v1/user/changeEmail", *API_URL))
+        .post(format!("{}/v1/user", *API_URL))
         .header(
             "Authorization",
             String::from("Bearer ") + &credentials.access_token,
@@ -437,16 +437,16 @@ pub fn change_email(
 
 pub fn change_full_name(
     credentials: &AuthenticationResponse,
-    full_name: &str,
+    fullname: &str,
 ) -> Result<ApiResult, reqwest::Error> {
     let client = reqwest::blocking::Client::new();
     let resp = client
-        .post(format!("{}/v1/user/changeFullName", *API_URL))
+        .post(format!("{}/v1/user", *API_URL))
         .header(
             "Authorization",
             String::from("Bearer ") + &credentials.access_token,
         )
-        .json(&HashMap::from([("fullName", full_name)]))
+        .json(&HashMap::from([("fullname", fullname)]))
         .send()
         .expect("api error");
     match resp.status().as_u16() {

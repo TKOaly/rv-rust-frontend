@@ -1687,7 +1687,7 @@ fn settings_loop(
                         'n' => {
                             print_title(terminal_io, "Change your FULL name:");
 
-                            let full_name = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+                            let fullname = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
                                 TimeoutResult::TIMEOUT => {
                                     utils::printline(terminal_io, "Timed out!");
                                     std::thread::sleep(std::time::Duration::from_millis(2000));
@@ -1696,7 +1696,7 @@ fn settings_loop(
                                 TimeoutResult::RESULT(s) => s,
                             };
 
-                            match rv_api::change_full_name(credentials, &full_name).unwrap() {
+                            match rv_api::change_full_name(credentials, &fullname).unwrap() {
                                 rv_api::ApiResult::Success => {
                                     utils::printline(terminal_io, "Name successfully changed.");
                                 }
