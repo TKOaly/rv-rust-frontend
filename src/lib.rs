@@ -154,7 +154,7 @@ fn register(username: &str, terminal_io: &mut TerminalIO) -> TimeoutResult<()> {
 
     execute!(terminal_io.writer, Print("\r\nEnter your email address:")).unwrap();
 
-    let email = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+    let email1 = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::TIMEOUT => {
             utils::printline(terminal_io, "Timed out!");
             std::thread::sleep(std::time::Duration::from_millis(2000));
@@ -164,7 +164,29 @@ fn register(username: &str, terminal_io: &mut TerminalIO) -> TimeoutResult<()> {
     };
     printline(terminal_io, "");
 
-    match rv_api::register(&username, &password1, &full_name, &email).unwrap() {
+    execute!(
+        terminal_io.writer,
+        Print("\r\nEnter your email address again:")
+    )
+    .unwrap();
+
+    let email2 = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+        TimeoutResult::TIMEOUT => {
+            utils::printline(terminal_io, "Timed out!");
+            std::thread::sleep(std::time::Duration::from_millis(2000));
+            return TimeoutResult::TIMEOUT;
+        }
+        TimeoutResult::RESULT(s) => s,
+    };
+    printline(terminal_io, "");
+
+    if email1 != email2 {
+        printline(terminal_io, "Given emails do not match, aborting.");
+        std::thread::sleep(std::time::Duration::from_millis(2000));
+        return TimeoutResult::RESULT(());
+    }
+
+    match rv_api::register(&username, &password1, &full_name, &email1).unwrap() {
         rv_api::ApiResult::Success => {
             printline(terminal_io, &format!("{username} registered successfully"));
             utils::confirm_enter_to_continue(terminal_io);

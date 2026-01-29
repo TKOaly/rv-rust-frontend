@@ -362,6 +362,7 @@ pub fn change_password_admin(
         code => Ok(ApiResult::Fail(format!("http response {code}"))),
     }
 }
+
 pub fn change_password(
     credentials: &AuthenticationResponse,
     password: &str,
@@ -398,6 +399,54 @@ pub fn change_rfid(
             String::from("Bearer ") + &credentials.access_token,
         )
         .json(&HashMap::from([("rfid", rfid)]))
+        .send()
+        .expect("api error");
+    match resp.status().as_u16() {
+        204 => Ok(ApiResult::Success),
+        400 => Ok(ApiResult::Fail(
+            "Missing or invalid fields in request".to_string(),
+        )),
+        401 => Ok(ApiResult::Fail("Not authorized".to_string())),
+        code => Ok(ApiResult::Fail(format!("http response {code}"))),
+    }
+}
+
+pub fn change_email(
+    credentials: &AuthenticationResponse,
+    email: &str,
+) -> Result<ApiResult, reqwest::Error> {
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .post(format!("{}/v1/user/changeEmail", *API_URL))
+        .header(
+            "Authorization",
+            String::from("Bearer ") + &credentials.access_token,
+        )
+        .json(&HashMap::from([("email", email)]))
+        .send()
+        .expect("api error");
+    match resp.status().as_u16() {
+        204 => Ok(ApiResult::Success),
+        400 => Ok(ApiResult::Fail(
+            "Missing or invalid fields in request".to_string(),
+        )),
+        401 => Ok(ApiResult::Fail("Not authorized".to_string())),
+        code => Ok(ApiResult::Fail(format!("http response {code}"))),
+    }
+}
+
+pub fn change_full_name(
+    credentials: &AuthenticationResponse,
+    full_name: &str,
+) -> Result<ApiResult, reqwest::Error> {
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .post(format!("{}/v1/user/changeFullName", *API_URL))
+        .header(
+            "Authorization",
+            String::from("Bearer ") + &credentials.access_token,
+        )
+        .json(&HashMap::from([("fullName", full_name)]))
         .send()
         .expect("api error");
     match resp.status().as_u16() {
