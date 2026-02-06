@@ -192,6 +192,15 @@ pub fn clear_terminal(terminal_io: &mut TerminalIO) {
     .unwrap()
 }
 
+pub fn clear_line(terminal_io: &mut TerminalIO) {
+    execute!(
+        terminal_io.writer,
+        terminal::Clear(terminal::ClearType::CurrentLine),
+        cursor::MoveUp(1),
+    )
+    .unwrap();
+}
+
 pub fn confirm_enter_to_continue(terminal_io: &mut TerminalIO) -> ConfirmResult {
     printline(terminal_io, "Press ENTER to continue");
     loop {

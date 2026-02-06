@@ -1,7 +1,6 @@
 use reqwest;
 use serde::Deserialize;
 use serde::Serialize;
-use std::string;
 use std::{collections::HashMap, sync::LazyLock};
 
 static API_URL: LazyLock<String> = LazyLock::new(|| {

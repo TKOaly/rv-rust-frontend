@@ -18,10 +18,10 @@ use std::{
         mpsc::{Receiver, RecvTimeoutError},
         LazyLock,
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
 use user_loop::RV_LOGO;
-use utils::{printline, ConfirmResult, TimeoutResult};
+use utils::{ConfirmResult, TimeoutResult};
 
 pub const INPUT_TIMEOUT_SHORT: Duration = Duration::from_secs(60);
 pub const INPUT_TIMEOUT_LONG: Duration = Duration::from_secs(5 * 60);
@@ -136,7 +136,7 @@ fn register(username: &str, terminal_io: &mut TerminalIO) -> TimeoutResult<()> {
     };
 
     if password1 != password2 {
-        printline(terminal_io, "Given passwords do not match, aborting.");
+        utils::printline(terminal_io, "Given passwords do not match, aborting.");
         std::thread::sleep(std::time::Duration::from_millis(2000));
         return TimeoutResult::RESULT(());
     }
@@ -152,51 +152,82 @@ fn register(username: &str, terminal_io: &mut TerminalIO) -> TimeoutResult<()> {
         TimeoutResult::RESULT(s) => s,
     };
 
-    execute!(terminal_io.writer, Print("\r\nEnter your email address:")).unwrap();
-
-    let email1 = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+    let email = match input_email(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::TIMEOUT => {
             utils::printline(terminal_io, "Timed out!");
             std::thread::sleep(std::time::Duration::from_millis(2000));
             return TimeoutResult::TIMEOUT;
         }
-        TimeoutResult::RESULT(s) => s,
+        TimeoutResult::RESULT(email) => email,
     };
-    printline(terminal_io, "");
 
-    execute!(
-        terminal_io.writer,
-        Print("\r\nEnter your email address again:")
-    )
-    .unwrap();
-
-    let email2 = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
-        TimeoutResult::TIMEOUT => {
-            utils::printline(terminal_io, "Timed out!");
-            std::thread::sleep(std::time::Duration::from_millis(2000));
-            return TimeoutResult::TIMEOUT;
-        }
-        TimeoutResult::RESULT(s) => s,
-    };
-    printline(terminal_io, "");
-
-    if email1 != email2 {
-        printline(terminal_io, "Given emails do not match, aborting.");
-        std::thread::sleep(std::time::Duration::from_millis(2000));
-        return TimeoutResult::RESULT(());
-    }
-
-    match rv_api::register(&username, &password1, &full_name, &email1).unwrap() {
+    match rv_api::register(&username, &password1, &full_name, &email).unwrap() {
         rv_api::ApiResult::Success => {
-            printline(terminal_io, &format!("{username} registered successfully"));
+            utils::printline(terminal_io, &format!("{username} registered successfully"));
             utils::confirm_enter_to_continue(terminal_io);
         }
         rv_api::ApiResult::Fail(msg) => {
-            printline(terminal_io, &format!("registration failed: {msg}"));
+            utils::printline(terminal_io, &format!("registration failed: {msg}"));
             utils::confirm_enter_to_continue(terminal_io);
         }
     }
     TimeoutResult::RESULT(())
+}
+
+fn input_email(terminal_io: &mut TerminalIO, timeout: Duration) -> TimeoutResult<String> {
+    let time = Instant::now();
+    loop {
+        if Instant::now() - time >= timeout {
+            return TimeoutResult::TIMEOUT;
+        }
+
+        execute!(terminal_io.writer, Print("\r\nEnter your email address:")).unwrap();
+
+        let email1 = match utils::readline(terminal_io, timeout) {
+            TimeoutResult::TIMEOUT => {
+                return TimeoutResult::TIMEOUT;
+            }
+            TimeoutResult::RESULT(s) => s,
+        };
+
+        execute!(
+            terminal_io.writer,
+            Print("\r\nEnter your email address again:")
+        )
+        .unwrap();
+
+        let email2 = match utils::readline(terminal_io, timeout) {
+            TimeoutResult::TIMEOUT => {
+                return TimeoutResult::TIMEOUT;
+            }
+            TimeoutResult::RESULT(s) => s,
+        };
+        utils::printline(terminal_io, "");
+
+        if email1.is_empty() {
+            return TimeoutResult::TIMEOUT;
+        }
+
+        if email1.split("@").count() != 2 {
+            utils::printline(terminal_io, "Given emails are not valid, try again.");
+            std::thread::sleep(std::time::Duration::from_millis(3000));
+            for _ in 0..6 {
+                utils::clear_line(terminal_io);
+            }
+            continue;
+        }
+
+        if email1 != email2 {
+            utils::printline(terminal_io, "Given emails do not match, try again.");
+            std::thread::sleep(std::time::Duration::from_millis(3000));
+            for _ in 0..6 {
+                utils::clear_line(terminal_io);
+            }
+            continue;
+        }
+
+        return TimeoutResult::RESULT(email1);
+    }
 }
 
 pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {

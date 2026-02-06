@@ -40,7 +40,6 @@ use crossterm::{
 use input::InputEvent;
 use regex::Regex;
 use rv_api::ApiResult;
-use std::fmt::format;
 use std::process::exit;
 use std::sync::mpsc::RecvTimeoutError;
 use std::sync::LazyLock;
@@ -832,6 +831,7 @@ fn search_products(
 }
 
 fn change_user_email(
+    timeout: Duration,
     terminal_io: &mut TerminalIO,
     credentials: &rv_api::AuthenticationResponse,
 ) -> TimeoutResult<()> {
@@ -839,7 +839,7 @@ fn change_user_email(
 
     execute!(terminal_io.writer, Print("Enter new email: ")).unwrap();
     let email1;
-    match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+    match utils::readline(terminal_io, timeout) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
         TimeoutResult::RESULT(s) => email1 = s,
     }
@@ -847,7 +847,7 @@ fn change_user_email(
     utils::printline(terminal_io, "");
     execute!(terminal_io.writer, Print("Enter new email again: ")).unwrap();
     let email2;
-    match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+    match utils::readline(terminal_io, timeout) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
         TimeoutResult::RESULT(s) => email2 = s,
     }
@@ -879,6 +879,7 @@ fn change_user_email(
 }
 
 fn change_user_password_user(
+    timeout: Duration,
     terminal_io: &mut TerminalIO,
     credentials: &rv_api::AuthenticationResponse,
 ) -> TimeoutResult<()> {
@@ -886,7 +887,7 @@ fn change_user_password_user(
 
     execute!(terminal_io.writer, Print("Enter new password: ")).unwrap();
     let password1;
-    match utils::readpasswd(terminal_io, INPUT_TIMEOUT_LONG) {
+    match utils::readpasswd(terminal_io, timeout) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
         TimeoutResult::RESULT(s) => password1 = s,
     }
@@ -894,7 +895,7 @@ fn change_user_password_user(
     utils::printline(terminal_io, "");
     execute!(terminal_io.writer, Print("Enter new password again: ")).unwrap();
     let password2;
-    match utils::readpasswd(terminal_io, INPUT_TIMEOUT_LONG) {
+    match utils::readpasswd(terminal_io, timeout) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
         TimeoutResult::RESULT(s) => password2 = s,
     }
@@ -1677,7 +1678,11 @@ fn settings_loop(
                         }
                         'p' => {
                             printline(terminal_io, "\n");
-                            match change_user_password_user(terminal_io, credentials) {
+                            match change_user_password_user(
+                                INPUT_TIMEOUT_LONG,
+                                terminal_io,
+                                credentials,
+                            ) {
                                 TimeoutResult::TIMEOUT => break 'main,
                                 _ => (),
                             }
@@ -1714,7 +1719,7 @@ fn settings_loop(
                         'e' => {
                             printline(terminal_io, "\n");
 
-                            match change_user_email(terminal_io, &credentials) {
+                            match change_user_email(INPUT_TIMEOUT_LONG, terminal_io, &credentials) {
                                 TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
                                 TimeoutResult::RESULT(_) => (),
                             }
