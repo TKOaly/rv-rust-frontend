@@ -861,7 +861,7 @@ fn change_user_email(
     } else if email1.split("@").count() != 2 {
         utils::printline(terminal_io, "You did not provide valid email address");
     } else if email1 == email2 {
-        match rv_api::change_password(credentials, &email1).unwrap() {
+        match rv_api::change_email(credentials, &email1).unwrap() {
             rv_api::ApiResult::Success => {
                 utils::printline(terminal_io, "Email successfully changed.");
             }
@@ -1690,8 +1690,10 @@ fn settings_loop(
                             break;
                         }
                         'n' => {
+                            printline(terminal_io, "");
                             print_title(terminal_io, "Change your FULL name:");
 
+                            execute!(terminal_io.writer, Print("Your FULL name: ")).unwrap();
                             let fullname = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
                                 TimeoutResult::TIMEOUT => {
                                     utils::printline(terminal_io, "Timed out!");
