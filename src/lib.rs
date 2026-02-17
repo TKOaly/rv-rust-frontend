@@ -11,9 +11,10 @@ use crossterm::{
     terminal::{self, enable_raw_mode, EnterAlternateScreen},
 };
 
-use rv_api::{login_rfid, ApiResultValue};
+use rv_api::{login_rfid, ApiResult, ApiResultValue, UserInfoTrait};
 use std::{
     io::{self, stdout, Result, Stdout, Write},
+    ops::ControlFlow,
     sync::{
         mpsc::{Receiver, RecvTimeoutError},
         LazyLock,
@@ -347,6 +348,26 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
                 },
                 Ok(input::InputEvent::Rfid(rfid)) => match login_rfid(&rfid) {
                     Some(credentials) => {
+                        let user = match rv_api::get_user_info(&credentials) {
+                            Err(_) => {
+                                utils::printline(
+                                    terminal_io,
+                                    "error encountered when connecting to backend, try again",
+                                );
+                                std::thread::sleep(std::time::Duration::from_millis(2000));
+                                continue 'main;
+                            }
+                            Ok(u) => u,
+                        };
+
+                        if user.no_email() {
+                            if let ControlFlow::Break(_) =
+                                set_valid_email(terminal_io, &credentials)
+                            {
+                                continue 'main;
+                            }
+                        }
+
                         user_loop::user_loop(&credentials, terminal_io);
                         continue 'main;
                     }
@@ -367,8 +388,74 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
                 continue;
             }
         };
+
+        let user = match rv_api::get_user_info(&credentials) {
+            Err(_) => {
+                utils::printline(
+                    terminal_io,
+                    "error encountered when connecting to backend, try again",
+                );
+                std::thread::sleep(std::time::Duration::from_millis(2000));
+                continue 'main;
+            }
+            Ok(u) => u,
+        };
+
+        if user.no_email() {
+            if let ControlFlow::Break(_) = set_valid_email(terminal_io, &credentials) {
+                continue 'main;
+            }
+        }
+
         user_loop::user_loop(&credentials, terminal_io);
     }
+}
+
+fn set_valid_email(
+    terminal_io: &mut TerminalIO,
+    credentials: &rv_api::AuthenticationResponse,
+) -> ControlFlow<()> {
+    utils::printline(
+        terminal_io,
+        "To continue using RV you need to provide valid email",
+    );
+    let email = match input_email(terminal_io, INPUT_TIMEOUT_LONG) {
+        TimeoutResult::TIMEOUT => {
+            utils::printline(terminal_io, "Timed out!");
+            std::thread::sleep(std::time::Duration::from_millis(2000));
+            return ControlFlow::Break(());
+        }
+        TimeoutResult::RESULT(email) => email,
+    };
+
+    match rv_api::change_email(credentials, &email) {
+        Ok(apiresult) => {
+            if let ApiResult::Fail(e) = apiresult {
+                if e == "Email taken" {
+                    utils::printline(
+                        terminal_io,
+                        "Email is allredy in system. Use another email adres",
+                    );
+                } else {
+                    utils::printline(
+                        terminal_io,
+                        "Error encountered when connecting to backend, try again",
+                    );
+                }
+                std::thread::sleep(std::time::Duration::from_millis(2000));
+                return ControlFlow::Break(());
+            }
+        }
+        Err(_) => {
+            utils::printline(
+                terminal_io,
+                "Error encountered when connecting to backend, try again",
+            );
+            std::thread::sleep(std::time::Duration::from_millis(2000));
+            return ControlFlow::Break(());
+        }
+    }
+    ControlFlow::Continue(())
 }
 
 pub fn start() -> io::Result<()> {
