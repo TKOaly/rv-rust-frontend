@@ -25,15 +25,12 @@ use crate::INPUT_TIMEOUT_SHORT;
 use chrono::DateTime;
 
 use chrono::Local;
-use crossterm::queue;
-use crossterm::style::Color;
-use crossterm::style::PrintStyledContent;
-use crossterm::style::Stylize;
 use crossterm::{
-    cursor,
+    cursor::{self, SavePosition, RestorePosition},
     event::{Event, KeyCode},
     execute,
-    style::Print,
+    queue,
+    style::{Print, PrintStyledContent, Stylize, Color},
     terminal::{self, disable_raw_mode},
     ExecutableCommand,
 };
@@ -1578,7 +1575,6 @@ fn settings_loop(
         queue!(
             terminal_io.writer,
             cursor::MoveTo(0, terminal::size()?.1),
-            Print(RV_LOGO.to_string().yellow()),
             Print("Available commands (press key to select):\r\n"),
             PrintStyledContent("R".dark_green().bold()),
             Print(" - manage your rfid\r\n"),
@@ -1590,6 +1586,10 @@ fn settings_loop(
             Print(" - change your FULL name\r\n"),
             PrintStyledContent("V".dark_green().bold()),
             Print(" - change your privacy\r\n"),
+            SavePosition,
+            cursor::MoveTo(0, 3),
+            PrintStyledContent(RV_LOGO.to_string().yellow()),
+            RestorePosition
         )
         .unwrap();
 
@@ -1597,7 +1597,7 @@ fn settings_loop(
             queue!(
                 terminal_io.writer,
                 PrintStyledContent("U".dark_green().bold()),
-                Print(" - change your privacy\r\n"),
+                Print(" - change your username\r\n"),
             )
             .unwrap();
         }
@@ -1817,7 +1817,6 @@ fn print_user_loop_instructions(
     queue!(
         terminal_io.writer,
         cursor::MoveTo(0, terminal::size()?.1),
-        Print(RV_LOGO.to_string().yellow()),
         Print("Available commands (press key to select):\r\n"),
         PrintStyledContent("<barcode>".dark_green()),
         Print(" - buy this item\r\n"),
@@ -1837,6 +1836,10 @@ fn print_user_loop_instructions(
         Print(" - clear terminal\r\n"),
         PrintStyledContent("<enter>".dark_green().bold()),
         Print(" - log out\r\n"),
+        SavePosition,
+        cursor::MoveTo(0, 3),
+        PrintStyledContent(RV_LOGO.to_string().yellow()),
+        RestorePosition
     )
     .unwrap();
     if user_info.is_admin() {
