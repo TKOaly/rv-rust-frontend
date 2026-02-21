@@ -238,7 +238,7 @@ pub fn change_privacy_level(
     struct Body {
         #[serde(rename = "privacyLevel")]
         privacy_level: i32,
-    };
+    }
     let hm: Body = Body { privacy_level };
     let resp = client
         .post(format!("{}/v1/user/changePrivacyLevel", *API_URL))
@@ -431,6 +431,30 @@ pub fn change_email(
         )),
         401 => Ok(ApiResult::Fail("Not authorized".to_string())),
         409 => Ok(ApiResult::Fail("Email is taken".to_string())),
+        code => Ok(ApiResult::Fail(format!("http response {code}"))),
+    }
+}
+
+pub fn change_username(
+    credentials: &AuthenticationResponse,
+    username: &str,
+) -> Result<ApiResult, reqwest::Error> {
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .patch(format!("{}/v1/user", *API_URL))
+        .header(
+            "Authorization",
+            String::from("Bearer ") + &credentials.access_token,
+        )
+        .json(&HashMap::from([("username", username)]))
+        .send()
+        .expect("api error");
+    match resp.status().as_u16() {
+        200 => Ok(ApiResult::Success),
+        400 => Ok(ApiResult::Fail(
+            "Missing or invalid fields in request".to_string(),
+        )),
+        401 => Ok(ApiResult::Fail("Not authorized".to_string())),
         code => Ok(ApiResult::Fail(format!("http response {code}"))),
     }
 }

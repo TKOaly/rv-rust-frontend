@@ -1590,6 +1590,20 @@ fn settings_loop(
             Print(" - change your FULL name\r\n"),
             PrintStyledContent("V".dark_green().bold()),
             Print(" - change your privacy\r\n"),
+        )
+        .unwrap();
+
+        if utils::is_barcode(&user_info.username) {
+            queue!(
+                terminal_io.writer,
+                PrintStyledContent("U".dark_green().bold()),
+                Print(" - change your privacy\r\n"),
+            )
+            .unwrap();
+        }
+
+        queue!(
+            terminal_io.writer,
             PrintStyledContent("<enter>".dark_green().bold()),
             Print(" - exit settings\r\n"),
         )
@@ -1725,6 +1739,36 @@ fn settings_loop(
                                 TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
                                 TimeoutResult::RESULT(_) => (),
                             }
+                            printline(terminal_io, "");
+                            break;
+                        }
+                        'u' => {
+                            if !utils::is_barcode(&user_info.username) {}
+                            printline(terminal_io, "");
+                            print_title(terminal_io, "Change your username:");
+
+                            execute!(terminal_io.writer, Print("New username: ")).unwrap();
+                            let fullname = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+                                TimeoutResult::TIMEOUT => {
+                                    utils::printline(terminal_io, "Timed out!");
+                                    std::thread::sleep(std::time::Duration::from_millis(2000));
+                                    return TimeoutResult::TIMEOUT;
+                                }
+                                TimeoutResult::RESULT(s) => s,
+                            };
+
+                            match rv_api::change_username(credentials, &fullname).unwrap() {
+                                rv_api::ApiResult::Success => {
+                                    utils::printline(terminal_io, "Username successfully changed.");
+                                }
+                                rv_api::ApiResult::Fail(msg) => {
+                                    utils::print_error_line(
+                                        terminal_io,
+                                        &format!("Username change failed: {msg}"),
+                                    );
+                                }
+                            }
+
                             printline(terminal_io, "");
                             break;
                         }
