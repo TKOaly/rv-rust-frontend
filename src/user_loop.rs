@@ -1575,7 +1575,15 @@ fn settings_loop(
         queue!(
             terminal_io.writer,
             cursor::MoveTo(0, terminal::size()?.1),
-            Print("Available commands (press key to select):\r\n"),
+            PrintStyledContent("Current values\r\n".bold()),
+            PrintStyledContent("Name: ".dark_green().bold()),
+            Print(format!("{}\r\n", user_info.full_name)),
+            PrintStyledContent("Email: ".dark_green().bold()),
+            Print(format!("{}\r\n", user_info.email)),
+            PrintStyledContent("Privacy level: ".dark_green().bold()),
+            Print(format!("{}\r\n", user_info.privacy_level)),
+            Print("\r\n"),
+            Print("Available commands (press key to select):\r\n".bold()),
             PrintStyledContent("R".dark_green().bold()),
             Print(" - manage your rfid\r\n"),
             PrintStyledContent("P".dark_green().bold()),
@@ -1585,7 +1593,7 @@ fn settings_loop(
             PrintStyledContent("N".dark_green().bold()),
             Print(" - change your FULL name\r\n"),
             PrintStyledContent("V".dark_green().bold()),
-            Print(" - change your privacy\r\n"),
+            Print(" - change your privacy level\r\n"),
             SavePosition,
             cursor::MoveTo(0, 3),
             PrintStyledContent(RV_LOGO.to_string().yellow()),
@@ -1771,6 +1779,11 @@ fn settings_loop(
 
                             printline(terminal_io, "");
                             break;
+                        }
+                        'q' => {
+                            // for jääräs
+                            clear_terminal(terminal_io);
+                            break 'main;
                         }
                         _ => {}
                     },

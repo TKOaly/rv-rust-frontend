@@ -175,13 +175,15 @@ pub struct UserInfo {
     #[serde(rename = "userId")]
     pub user_id: i32,
     pub username: String,
-    //#[serde(rename = "fullName")] note this is optionaö!!
-    //pub full_name: String,
+    #[serde(rename = "fullName")]
+    pub full_name: String,
     #[serde(rename = "email")]
     pub email: String,
     #[serde(rename = "moneyBalance")]
     pub money_balance: i32,
     pub role: String,
+    #[serde(rename = "privacyLevel")]
+    pub privacy_level: u8
 }
 
 pub trait UserInfoTrait {
