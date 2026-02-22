@@ -1436,7 +1436,7 @@ fn management_mode_loop(
         queue!(
             terminal_io.writer,
             cursor::MoveTo(0, terminal::size()?.1),
-            PrintStyledContent("=== management mode ===\r\n".bold()),
+            Print("=== management mode ===\r\n"),
             PrintStyledContent("<barcode>".dark_green().bold()),
             Print(" - IF FOUND update price and count ELSE add as a new item/box\r\n"),
             PrintStyledContent("F".dark_green().bold()),
@@ -1577,7 +1577,7 @@ fn settings_loop(
         queue!(
             terminal_io.writer,
             cursor::MoveTo(0, terminal::size()?.1),
-            PrintStyledContent("Current values\r\n".bold()),
+            Print("Current values\r\n"),
             PrintStyledContent("Name: ".dark_green().bold()),
             Print(format!("{}\r\n", user_info.full_name)),
             PrintStyledContent("Email: ".dark_green().bold()),
@@ -1585,7 +1585,7 @@ fn settings_loop(
             PrintStyledContent("Privacy level: ".dark_green().bold()),
             Print(format!("{}\r\n", user_info.privacy_level)),
             Print("\r\n"),
-            Print("Available commands (press key to select):\r\n".bold()),
+            Print("Available commands (press key to select):\r\n"),
             PrintStyledContent("R".dark_green().bold()),
             Print(" - manage your rfid\r\n"),
             PrintStyledContent("P".dark_green().bold()),
@@ -1832,7 +1832,7 @@ fn print_user_loop_instructions(
     queue!(
         terminal_io.writer,
         cursor::MoveTo(0, terminal::size()?.1),
-        PrintStyledContent("Available commands (press key to select):\r\n".bold()),
+        Print("Available commands (press key to select):\r\n"),
         PrintStyledContent("<barcode>".dark_green()),
         Print(" - buy this item\r\n"),
         PrintStyledContent("B".dark_green().bold()),
