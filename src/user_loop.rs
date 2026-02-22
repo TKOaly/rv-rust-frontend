@@ -22,9 +22,8 @@ use crate::utils::TimeoutResult;
 use crate::TerminalIO;
 use crate::INPUT_TIMEOUT_LONG;
 use crate::INPUT_TIMEOUT_SHORT;
-use chrono::DateTime;
 
-use chrono::Local;
+use chrono::{Local, DateTime};
 use crossterm::{
     cursor::{self, SavePosition, RestorePosition},
     event::{Event, KeyCode},
@@ -1437,8 +1436,7 @@ fn management_mode_loop(
         queue!(
             terminal_io.writer,
             cursor::MoveTo(0, terminal::size()?.1),
-            PrintStyledContent(RV_LOGO.to_string().yellow()),
-            Print("=== management mode ===\r\n"),
+            PrintStyledContent("=== management mode ===\r\n".bold()),
             PrintStyledContent("<barcode>".dark_green().bold()),
             Print(" - IF FOUND update price and count ELSE add as a new item/box\r\n"),
             PrintStyledContent("F".dark_green().bold()),
@@ -1449,6 +1447,10 @@ fn management_mode_loop(
             Print(" - change password of an user\r\n"),
             PrintStyledContent("<enter>".dark_green().bold()),
             Print(" - exit management mode\r\n"),
+            SavePosition,
+            cursor::MoveTo(0, 3),
+            PrintStyledContent(RV_LOGO.to_string().yellow()),
+            RestorePosition
         )
         .unwrap();
         execute!(
@@ -1830,7 +1832,7 @@ fn print_user_loop_instructions(
     queue!(
         terminal_io.writer,
         cursor::MoveTo(0, terminal::size()?.1),
-        Print("Available commands (press key to select):\r\n"),
+        PrintStyledContent("Available commands (press key to select):\r\n".bold()),
         PrintStyledContent("<barcode>".dark_green()),
         Print(" - buy this item\r\n"),
         PrintStyledContent("B".dark_green().bold()),
