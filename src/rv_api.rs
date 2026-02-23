@@ -188,11 +188,16 @@ pub struct UserInfo {
 
 pub trait UserInfoTrait {
     fn is_admin(&self) -> bool;
+    fn no_email(&self) -> bool;
 }
 
 impl UserInfoTrait for UserInfo {
     fn is_admin(&self) -> bool {
         self.role == "ADMIN"
+    }
+
+    fn no_email(&self) -> bool {
+        self.role == "NOEMAIL"
     }
 }
 
