@@ -54,6 +54,17 @@ mod tests {
         assert_eq!(format_money(&12342), "123.42");
         assert_eq!(format_money(&-12342), "-123.42");
     }
+
+    #[test]
+    fn is_barcode_works() {
+        assert!(is_barcode("38588901797050"));
+        assert!(is_barcode("3858890179705"));
+        assert!(is_barcode("4901234567894"));
+        assert!(is_barcode("700941359952"));
+        assert!(is_barcode("80111351"));
+        assert!(is_barcode("01234565"));
+        assert!(!is_barcode("user"));
+    }
 }
 
 pub fn set_small_font() {
@@ -192,6 +203,15 @@ pub fn clear_terminal(terminal_io: &mut TerminalIO) {
     .unwrap()
 }
 
+pub fn clear_line(terminal_io: &mut TerminalIO) {
+    execute!(
+        terminal_io.writer,
+        terminal::Clear(terminal::ClearType::CurrentLine),
+        cursor::MoveUp(1),
+    )
+    .unwrap();
+}
+
 pub fn confirm_enter_to_continue(terminal_io: &mut TerminalIO) -> ConfirmResult {
     printline(terminal_io, "Press ENTER to continue");
     loop {
@@ -273,4 +293,45 @@ pub fn calculator_input(input: &str) -> Option<i32> {
     }
 
     None
+}
+
+pub fn is_barcode(input: &str) -> bool {
+    if !input.chars().all(|chr| chr.is_ascii_digit()) {
+        return false;
+    }
+
+    let len = input.len();
+    let size_even = len % 2 == 0;
+
+    if len != 8 && len != 12 && len != 13 && len != 14 {
+        return false;
+    }
+
+    let code: Vec<u32> = input
+        .chars()
+        .map(|char| char.to_digit(10).unwrap())
+        .collect();
+
+    let sum: u32 = code[..len - 1]
+        .iter()
+        .enumerate()
+        .map(|(i, &digit)| {
+            if i % 2 == 0 {
+                if size_even {
+                    3 * digit
+                } else {
+                    digit
+                }
+            } else {
+                if size_even {
+                    digit
+                } else {
+                    3 * digit
+                }
+            }
+        })
+        .sum();
+    let check_sum = (10 - (sum % 10)) % 10;
+    println!("{}", check_sum);
+    return check_sum == *code.last().unwrap();
 }

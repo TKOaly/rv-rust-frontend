@@ -22,25 +22,20 @@ use crate::utils::TimeoutResult;
 use crate::TerminalIO;
 use crate::INPUT_TIMEOUT_LONG;
 use crate::INPUT_TIMEOUT_SHORT;
-use chrono::DateTime;
 
-use chrono::Local;
-use crossterm::queue;
-use crossterm::style::Color;
-use crossterm::style::PrintStyledContent;
-use crossterm::style::Stylize;
+use chrono::{Local, DateTime};
 use crossterm::{
-    cursor,
+    cursor::{self, SavePosition, RestorePosition},
     event::{Event, KeyCode},
     execute,
-    style::Print,
+    queue,
+    style::{Print, PrintStyledContent, Stylize, Color},
     terminal::{self, disable_raw_mode},
     ExecutableCommand,
 };
 use input::InputEvent;
 use regex::Regex;
 use rv_api::ApiResult;
-use std::fmt::format;
 use std::process::exit;
 use std::sync::mpsc::RecvTimeoutError;
 use std::sync::LazyLock;
@@ -831,7 +826,56 @@ fn search_products(
     TimeoutResult::RESULT(())
 }
 
+fn change_user_email(
+    timeout: Duration,
+    terminal_io: &mut TerminalIO,
+    credentials: &rv_api::AuthenticationResponse,
+) -> TimeoutResult<()> {
+    print_title(terminal_io, "Change Email");
+
+    execute!(terminal_io.writer, Print("Enter new email: ")).unwrap();
+    let email1;
+    match utils::readline(terminal_io, timeout) {
+        TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
+        TimeoutResult::RESULT(s) => email1 = s,
+    }
+
+    utils::printline(terminal_io, "");
+    execute!(terminal_io.writer, Print("Enter new email again: ")).unwrap();
+    let email2;
+    match utils::readline(terminal_io, timeout) {
+        TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
+        TimeoutResult::RESULT(s) => email2 = s,
+    }
+    utils::printline(terminal_io, "");
+
+    if email1.len() == 0 {
+        utils::printline(
+            terminal_io,
+            "Empty email is not allowed! Email not changed.",
+        );
+    } else if email1.split("@").count() != 2 {
+        utils::printline(terminal_io, "You did not provide valid email address");
+    } else if email1 == email2 {
+        match rv_api::change_email(credentials, &email1).unwrap() {
+            rv_api::ApiResult::Success => {
+                utils::printline(terminal_io, "Email successfully changed.");
+            }
+            rv_api::ApiResult::Fail(msg) => {
+                utils::print_error_line(terminal_io, &format!("Email change failed: {msg}"));
+            }
+        }
+    } else {
+        utils::printline(terminal_io, "Emails do not match! email not changed.");
+    }
+    utils::printline(terminal_io, "");
+    utils::confirm_enter_to_continue(terminal_io);
+    utils::printline(terminal_io, "");
+    TimeoutResult::RESULT(())
+}
+
 fn change_user_password_user(
+    timeout: Duration,
     terminal_io: &mut TerminalIO,
     credentials: &rv_api::AuthenticationResponse,
 ) -> TimeoutResult<()> {
@@ -839,7 +883,7 @@ fn change_user_password_user(
 
     execute!(terminal_io.writer, Print("Enter new password: ")).unwrap();
     let password1;
-    match utils::readpasswd(terminal_io, INPUT_TIMEOUT_LONG) {
+    match utils::readpasswd(terminal_io, timeout) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
         TimeoutResult::RESULT(s) => password1 = s,
     }
@@ -847,7 +891,7 @@ fn change_user_password_user(
     utils::printline(terminal_io, "");
     execute!(terminal_io.writer, Print("Enter new password again: ")).unwrap();
     let password2;
-    match utils::readpasswd(terminal_io, INPUT_TIMEOUT_LONG) {
+    match utils::readpasswd(terminal_io, timeout) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
         TimeoutResult::RESULT(s) => password2 = s,
     }
@@ -1389,10 +1433,10 @@ fn management_mode_loop(
     'main: loop {
         let user_info = rv_api::get_user_info(&credentials).unwrap();
 
+
         queue!(
             terminal_io.writer,
             cursor::MoveTo(0, terminal::size()?.1),
-            PrintStyledContent(RV_LOGO.to_string().yellow()),
             Print("=== management mode ===\r\n"),
             PrintStyledContent("<barcode>".dark_green().bold()),
             Print(" - IF FOUND update price and count ELSE add as a new item/box\r\n"),
@@ -1404,6 +1448,10 @@ fn management_mode_loop(
             Print(" - change password of an user\r\n"),
             PrintStyledContent("<enter>".dark_green().bold()),
             Print(" - exit management mode\r\n"),
+            SavePosition,
+            cursor::MoveTo(0, 3),
+            PrintStyledContent(RV_LOGO.to_string().yellow()),
+            RestorePosition
         )
         .unwrap();
         execute!(
@@ -1519,6 +1567,266 @@ fn management_mode_loop(
     TimeoutResult::RESULT(())
 }
 
+fn settings_loop(
+    credentials: &rv_api::AuthenticationResponse,
+    terminal_io: &mut TerminalIO,
+) -> TimeoutResult<()> {
+    clear_terminal(terminal_io);
+    'main: loop {
+        let user_info = rv_api::get_user_info(&credentials).unwrap();
+
+        clear_terminal(terminal_io);
+
+        queue!(
+            terminal_io.writer,
+            cursor::MoveTo(0, terminal::size()?.1),
+            Print("Current values\r\n"),
+            PrintStyledContent("Name: ".dark_green().bold()),
+            Print(format!("{}\r\n", user_info.full_name)),
+            PrintStyledContent("Email: ".dark_green().bold()),
+            Print(format!("{}\r\n", user_info.email)),
+            PrintStyledContent("Privacy level: ".dark_green().bold()),
+            Print(format!("{}\r\n", user_info.privacy_level)),
+            Print("\r\n"),
+            Print("Available commands (press key to select):\r\n"),
+            PrintStyledContent("R".dark_green().bold()),
+            Print(" - manage your rfid\r\n"),
+            PrintStyledContent("P".dark_green().bold()),
+            Print(" - change your password\r\n"),
+            PrintStyledContent("E".dark_green().bold()),
+            Print(" - change your email\r\n"),
+            PrintStyledContent("N".dark_green().bold()),
+            Print(" - change your FULL name\r\n"),
+            PrintStyledContent("V".dark_green().bold()),
+            Print(" - change your privacy level\r\n"),
+            SavePosition,
+            cursor::MoveTo(0, 3),
+            PrintStyledContent(RV_LOGO.to_string().yellow()),
+            RestorePosition
+        )
+        .unwrap();
+
+        if utils::is_barcode(&user_info.username) {
+            queue!(
+                terminal_io.writer,
+                PrintStyledContent("U".dark_green().bold()),
+                Print(" - change your username\r\n"),
+            )
+            .unwrap();
+        }
+
+        queue!(
+            terminal_io.writer,
+            PrintStyledContent("<enter>".dark_green().bold()),
+            Print(" - exit settings\r\n"),
+        )
+        .unwrap();
+
+        execute!(
+            terminal_io.writer,
+            Print(&format!(
+                "\nDear {}, your saldo is {} > ",
+                user_info.username,
+                utils::format_money(&user_info.money_balance)
+            ))
+        )
+        .unwrap();
+
+        let mut command = String::new();
+        loop {
+            match terminal_io.recv.recv_timeout(INPUT_TIMEOUT_LONG) {
+                Err(RecvTimeoutError::Timeout) => return TimeoutResult::TIMEOUT,
+                Ok(InputEvent::Terminal(Event::Key(ev))) => match ev.code {
+                    KeyCode::Char(c) => match c.to_ascii_lowercase() {
+                        'r' => {
+                            printline(terminal_io, "\n");
+                            match change_user_rfid(terminal_io, credentials) {
+                                TimeoutResult::TIMEOUT => break 'main,
+                                _ => (),
+                            }
+                            printline(terminal_io, "");
+                            break;
+                        }
+                        'v' => {
+                            printline(terminal_io, "\n");
+                            utils::print_title(terminal_io, "Privacy Settings");
+                            printline(terminal_io, "Change the account's privacy level");
+                            printline(terminal_io, "0 = No restrictions");
+                            printline(
+                                terminal_io,
+                                "1 = Hide username from public (for example, leaderboards)",
+                            );
+                            printline(terminal_io,"2 = Hide all data from public (for example, list of recent purchases)" );
+                            printline(terminal_io, "<Enter> do not change");
+                            loop {
+                                match terminal_io.recv.recv_timeout(INPUT_TIMEOUT_SHORT) {
+                                    Ok(input::InputEvent::Terminal(Event::Key(ev))) => {
+                                        match ev.code {
+                                            KeyCode::Char(c) => match c {
+                                                '0' => {
+                                                    rv_api::change_privacy_level(credentials, 0)
+                                                        .unwrap();
+                                                    printline(
+                                                        terminal_io,
+                                                        "Changed privacy level to 0",
+                                                    );
+                                                    break;
+                                                }
+                                                '1' => {
+                                                    rv_api::change_privacy_level(credentials, 1)
+                                                        .unwrap();
+                                                    printline(
+                                                        terminal_io,
+                                                        "Changed privacy level to 1",
+                                                    );
+                                                    break;
+                                                }
+                                                '2' => {
+                                                    rv_api::change_privacy_level(credentials, 2)
+                                                        .unwrap();
+                                                    printline(
+                                                        terminal_io,
+                                                        "Changed privacy level to 2",
+                                                    );
+                                                    break;
+                                                }
+                                                _ => (),
+                                            },
+                                            KeyCode::Enter => break,
+                                            _ => (),
+                                        }
+                                    }
+                                    Err(RecvTimeoutError::Timeout) => break 'main,
+                                    _ => (),
+                                }
+                            }
+                            printline(terminal_io, "");
+                            break;
+                        }
+                        'p' => {
+                            printline(terminal_io, "\n");
+                            match change_user_password_user(
+                                INPUT_TIMEOUT_LONG,
+                                terminal_io,
+                                credentials,
+                            ) {
+                                TimeoutResult::TIMEOUT => break 'main,
+                                _ => (),
+                            }
+                            printline(terminal_io, "");
+                            break;
+                        }
+                        'n' => {
+                            printline(terminal_io, "");
+                            print_title(terminal_io, "Change your FULL name:");
+
+                            execute!(terminal_io.writer, Print("Your FULL name: ")).unwrap();
+                            let fullname = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+                                TimeoutResult::TIMEOUT => {
+                                    utils::printline(terminal_io, "Timed out!");
+                                    std::thread::sleep(std::time::Duration::from_millis(2000));
+                                    return TimeoutResult::TIMEOUT;
+                                }
+                                TimeoutResult::RESULT(s) => s,
+                            };
+
+                            match rv_api::change_full_name(credentials, &fullname).unwrap() {
+                                rv_api::ApiResult::Success => {
+                                    utils::printline(terminal_io, "Name successfully changed.");
+                                }
+                                rv_api::ApiResult::Fail(msg) => {
+                                    utils::print_error_line(
+                                        terminal_io,
+                                        &format!("Name change failed: {msg}"),
+                                    );
+                                }
+                            }
+
+                            printline(terminal_io, "");
+                            break;
+                        }
+                        'e' => {
+                            printline(terminal_io, "\n");
+
+                            match change_user_email(INPUT_TIMEOUT_LONG, terminal_io, &credentials) {
+                                TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
+                                TimeoutResult::RESULT(_) => (),
+                            }
+                            printline(terminal_io, "");
+                            break;
+                        }
+                        'u' => {
+                            if !utils::is_barcode(&user_info.username) {}
+                            printline(terminal_io, "");
+                            print_title(terminal_io, "Change your username:");
+
+                            execute!(terminal_io.writer, Print("New username: ")).unwrap();
+                            let fullname = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+                                TimeoutResult::TIMEOUT => {
+                                    utils::printline(terminal_io, "Timed out!");
+                                    std::thread::sleep(std::time::Duration::from_millis(2000));
+                                    return TimeoutResult::TIMEOUT;
+                                }
+                                TimeoutResult::RESULT(s) => s,
+                            };
+
+                            match rv_api::change_username(credentials, &fullname).unwrap() {
+                                rv_api::ApiResult::Success => {
+                                    utils::printline(terminal_io, "Username successfully changed.");
+                                }
+                                rv_api::ApiResult::Fail(msg) => {
+                                    utils::print_error_line(
+                                        terminal_io,
+                                        &format!("Username change failed: {msg}"),
+                                    );
+                                }
+                            }
+
+                            printline(terminal_io, "");
+                            break;
+                        }
+                        'q' => {
+                            // for jääräs
+                            clear_terminal(terminal_io);
+                            break 'main;
+                        }
+                        _ => {}
+                    },
+                    KeyCode::Backspace => {
+                        if !command.is_empty() {
+                            execute!(
+                                terminal_io.writer,
+                                cursor::MoveLeft(1),
+                                Print(" "),
+                                cursor::MoveLeft(1)
+                            )
+                            .unwrap();
+                            command.pop();
+                        }
+                    }
+                    KeyCode::Enter => {
+                        command = command.trim().to_string();
+                        utils::printline(terminal_io, "\r\n");
+                        if command.is_empty() {
+                            clear_terminal(terminal_io);
+                            break 'main;
+                        } else {
+                            utils::print_error_line(
+                                terminal_io,
+                                &format!("unknown command: {}\r\n", &command),
+                            );
+                            break;
+                        }
+                    }
+                    _ => (),
+                },
+                _ => (),
+            }
+        }
+    }
+    TimeoutResult::RESULT(())
+}
+
 fn print_user_loop_instructions(
     credentials: &rv_api::AuthenticationResponse,
     terminal_io: &mut TerminalIO,
@@ -1527,7 +1835,6 @@ fn print_user_loop_instructions(
     queue!(
         terminal_io.writer,
         cursor::MoveTo(0, terminal::size()?.1),
-        Print(RV_LOGO.to_string().yellow()),
         Print("Available commands (press key to select):\r\n"),
         PrintStyledContent("<barcode>".dark_green()),
         Print(" - buy this item\r\n"),
@@ -1539,18 +1846,18 @@ fn print_user_loop_instructions(
         Print(" - list matching products\r\n"),
         PrintStyledContent("H".dark_green().bold()),
         Print(" - show purchase history\r\n"),
-        PrintStyledContent("P".dark_green().bold()),
-        Print(" - change password\r\n"),
-        PrintStyledContent("R".dark_green().bold()),
-        Print(" - manage your rfid\r\n"),
-        PrintStyledContent("V".dark_green().bold()),
-        Print(" - change privacy\r\n"),
         PrintStyledContent("U".dark_green().bold()),
         Print(" - undo a recent purchase\r\n"),
+        PrintStyledContent("S".dark_green().bold()),
+        Print(" - change settings\r\n"),
         PrintStyledContent("C".dark_green().bold()),
         Print(" - clear terminal\r\n"),
         PrintStyledContent("<enter>".dark_green().bold()),
         Print(" - log out\r\n"),
+        SavePosition,
+        cursor::MoveTo(0, 3),
+        PrintStyledContent(RV_LOGO.to_string().yellow()),
+        RestorePosition
     )
     .unwrap();
     if user_info.is_admin() {
@@ -1655,24 +1962,6 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                             printline(terminal_io, "");
                             break;
                         }
-                        'p' => {
-                            printline(terminal_io, "\n");
-                            match change_user_password_user(terminal_io, credentials) {
-                                TimeoutResult::TIMEOUT => break 'main,
-                                _ => (),
-                            }
-                            printline(terminal_io, "");
-                            break;
-                        }
-                        'r' => {
-                            printline(terminal_io, "\n");
-                            match change_user_rfid(terminal_io, credentials) {
-                                TimeoutResult::TIMEOUT => break 'main,
-                                _ => (),
-                            }
-                            printline(terminal_io, "");
-                            break;
-                        }
                         'm' => {
                             if user_info.is_admin() {
                                 printline(terminal_io, "\n");
@@ -1684,67 +1973,20 @@ pub fn user_loop(credentials: &rv_api::AuthenticationResponse, terminal_io: &mut
                                 break;
                             }
                         }
+                        's' => {
+                            printline(terminal_io, "\n");
+                            match settings_loop(credentials, terminal_io) {
+                                TimeoutResult::TIMEOUT => break 'main,
+                                _ => (),
+                            }
+                            print_user_loop_instructions(credentials, terminal_io);
+                            break;
+                        }
                         'u' => {
                             printline(terminal_io, "\n");
                             match return_purchase(terminal_io, credentials) {
                                 TimeoutResult::TIMEOUT => break 'main,
                                 _ => (),
-                            }
-                            printline(terminal_io, "");
-                            break;
-                        }
-                        'v' => {
-                            printline(terminal_io, "\n");
-                            utils::print_title(terminal_io, "Privacy Settings");
-                            printline(terminal_io, "Change the account's privacy level");
-                            printline(terminal_io, "0 = No restrictions");
-                            printline(
-                                terminal_io,
-                                "1 = Hide username from public (for example, leaderboards)",
-                            );
-                            printline(terminal_io,"2 = Hide all data from public (for example, list of recent purchases)" );
-                            printline(terminal_io, "<Enter> do not change");
-                            loop {
-                                match terminal_io.recv.recv_timeout(INPUT_TIMEOUT_SHORT) {
-                                    Ok(input::InputEvent::Terminal(Event::Key(ev))) => {
-                                        match ev.code {
-                                            KeyCode::Char(c) => match c {
-                                                '0' => {
-                                                    rv_api::change_privacy_level(credentials, 0)
-                                                        .unwrap();
-                                                    printline(
-                                                        terminal_io,
-                                                        "Changed privacy level to 0",
-                                                    );
-                                                    break;
-                                                }
-                                                '1' => {
-                                                    rv_api::change_privacy_level(credentials, 1)
-                                                        .unwrap();
-                                                    printline(
-                                                        terminal_io,
-                                                        "Changed privacy level to 1",
-                                                    );
-                                                    break;
-                                                }
-                                                '2' => {
-                                                    rv_api::change_privacy_level(credentials, 2)
-                                                        .unwrap();
-                                                    printline(
-                                                        terminal_io,
-                                                        "Changed privacy level to 2",
-                                                    );
-                                                    break;
-                                                }
-                                                _ => (),
-                                            },
-                                            KeyCode::Enter => break,
-                                            _ => (),
-                                        }
-                                    }
-                                    Err(RecvTimeoutError::Timeout) => break 'main,
-                                    _ => (),
-                                }
                             }
                             printline(terminal_io, "");
                             break;
