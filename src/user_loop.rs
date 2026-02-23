@@ -1433,6 +1433,7 @@ fn management_mode_loop(
     'main: loop {
         let user_info = rv_api::get_user_info(&credentials).unwrap();
 
+
         queue!(
             terminal_io.writer,
             cursor::MoveTo(0, terminal::size()?.1),
@@ -1573,6 +1574,8 @@ fn settings_loop(
     clear_terminal(terminal_io);
     'main: loop {
         let user_info = rv_api::get_user_info(&credentials).unwrap();
+
+        clear_terminal(terminal_io);
 
         queue!(
             terminal_io.writer,
