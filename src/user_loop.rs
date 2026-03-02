@@ -23,13 +23,12 @@ use crate::TerminalIO;
 use crate::INPUT_TIMEOUT_LONG;
 use crate::INPUT_TIMEOUT_SHORT;
 
-use chrono::{Local, DateTime};
+use chrono::{DateTime, Local};
 use crossterm::{
-    cursor::{self, SavePosition, RestorePosition},
+    cursor::{self, RestorePosition, SavePosition},
     event::{Event, KeyCode},
-    execute,
-    queue,
-    style::{Print, PrintStyledContent, Stylize, Color},
+    execute, queue,
+    style::{Color, Print, PrintStyledContent, Stylize},
     terminal::{self, disable_raw_mode},
     ExecutableCommand,
 };
@@ -1433,7 +1432,6 @@ fn management_mode_loop(
     'main: loop {
         let user_info = rv_api::get_user_info(&credentials).unwrap();
 
-
         queue!(
             terminal_io.writer,
             cursor::MoveTo(0, terminal::size()?.1),
@@ -1721,7 +1719,7 @@ fn settings_loop(
                             print_title(terminal_io, "Change your FULL name:");
 
                             execute!(terminal_io.writer, Print("Your FULL name: ")).unwrap();
-                            let fullname = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+                            let full_name = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
                                 TimeoutResult::TIMEOUT => {
                                     utils::printline(terminal_io, "Timed out!");
                                     std::thread::sleep(std::time::Duration::from_millis(2000));
@@ -1730,7 +1728,7 @@ fn settings_loop(
                                 TimeoutResult::RESULT(s) => s,
                             };
 
-                            match rv_api::change_full_name(credentials, &fullname).unwrap() {
+                            match rv_api::change_full_name(credentials, &full_name).unwrap() {
                                 rv_api::ApiResult::Success => {
                                     utils::printline(terminal_io, "Name successfully changed.");
                                 }
@@ -1761,7 +1759,7 @@ fn settings_loop(
                             print_title(terminal_io, "Change your username:");
 
                             execute!(terminal_io.writer, Print("New username: ")).unwrap();
-                            let fullname = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+                            let username = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
                                 TimeoutResult::TIMEOUT => {
                                     utils::printline(terminal_io, "Timed out!");
                                     std::thread::sleep(std::time::Duration::from_millis(2000));
@@ -1770,7 +1768,7 @@ fn settings_loop(
                                 TimeoutResult::RESULT(s) => s,
                             };
 
-                            match rv_api::change_username(credentials, &fullname).unwrap() {
+                            match rv_api::change_username(credentials, &username).unwrap() {
                                 rv_api::ApiResult::Success => {
                                     utils::printline(terminal_io, "Username successfully changed.");
                                 }

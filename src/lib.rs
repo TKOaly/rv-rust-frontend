@@ -14,7 +14,6 @@ use crossterm::{
 use rv_api::{login_rfid, ApiResult, ApiResultValue, UserInfoTrait};
 use std::{
     io::{self, stdout, Result, Stdout, Write},
-    ops::ControlFlow,
     sync::{
         mpsc::{Receiver, RecvTimeoutError},
         LazyLock,
@@ -361,9 +360,13 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
                         };
 
                         if user.no_email() {
-                            if let ControlFlow::Break(_) =
-                                set_valid_email(terminal_io, &credentials)
-                            {
+                            if let None = set_valid_email(&credentials, terminal_io) {
+                                continue 'main;
+                            }
+                        }
+
+                        if user.full_name == "no name" {
+                            if let None = set_valid_full_name(&credentials, terminal_io) {
                                 continue 'main;
                             }
                         }
@@ -402,7 +405,13 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
         };
 
         if user.no_email() {
-            if let ControlFlow::Break(_) = set_valid_email(terminal_io, &credentials) {
+            if let None = set_valid_email(&credentials, terminal_io) {
+                continue 'main;
+            }
+        }
+
+        if user.full_name == "no name" {
+            if let None = set_valid_full_name(&credentials, terminal_io) {
                 continue 'main;
             }
         }
@@ -412,9 +421,9 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
 }
 
 fn set_valid_email(
-    terminal_io: &mut TerminalIO,
     credentials: &rv_api::AuthenticationResponse,
-) -> ControlFlow<()> {
+    terminal_io: &mut TerminalIO,
+) -> Option<()> {
     utils::printline(
         terminal_io,
         "To continue using RV you need to provide valid email",
@@ -423,7 +432,7 @@ fn set_valid_email(
         TimeoutResult::TIMEOUT => {
             utils::printline(terminal_io, "Timed out!");
             std::thread::sleep(std::time::Duration::from_millis(2000));
-            return ControlFlow::Break(());
+            return None;
         }
         TimeoutResult::RESULT(email) => email,
     };
@@ -443,7 +452,7 @@ fn set_valid_email(
                     );
                 }
                 std::thread::sleep(std::time::Duration::from_millis(2000));
-                return ControlFlow::Break(());
+                return None;
             }
         }
         Err(_) => {
@@ -452,10 +461,58 @@ fn set_valid_email(
                 "Error encountered when connecting to backend, try again",
             );
             std::thread::sleep(std::time::Duration::from_millis(2000));
-            return ControlFlow::Break(());
+            return None;
         }
     }
-    ControlFlow::Continue(())
+    Some(())
+}
+
+fn set_valid_full_name(
+    credentials: &rv_api::AuthenticationResponse,
+    terminal_io: &mut TerminalIO,
+) -> Option<()> {
+    utils::printline(
+        terminal_io,
+        "To continue using RV you need to provide your FULL name",
+    );
+    utils::printline(terminal_io, "");
+
+    execute!(terminal_io.writer, Print("Enter your FULL name: ")).unwrap();
+
+    let full_name = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+        TimeoutResult::TIMEOUT => {
+            utils::printline(terminal_io, "Timed out!");
+            std::thread::sleep(std::time::Duration::from_millis(2000));
+            return None;
+        }
+        TimeoutResult::RESULT(s) => s,
+    };
+
+    if full_name.is_empty() {
+        return None;
+    }
+
+    match rv_api::change_username(credentials, &full_name) {
+        Ok(apiresult) => {
+            if let ApiResult::Fail(e) = apiresult {
+                utils::printline(
+                    terminal_io,
+                    "Error encountered when connecting to backend, try again",
+                );
+                std::thread::sleep(std::time::Duration::from_millis(2000));
+                return None;
+            }
+        }
+        Err(_) => {
+            utils::printline(
+                terminal_io,
+                "Error encountered when connecting to backend, try again",
+            );
+            std::thread::sleep(std::time::Duration::from_millis(2000));
+            return None;
+        }
+    }
+    Some(())
 }
 
 pub fn start() -> io::Result<()> {

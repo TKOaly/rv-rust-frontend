@@ -13,6 +13,8 @@ static RV_TERMINAL_SECRET: LazyLock<String> =
 pub struct AuthenticationResponse {
     #[serde(rename = "accessToken")]
     access_token: String,
+    #[serde(rename = "passwordReset")]
+    password_reset: bool
 }
 
 #[derive(Deserialize)]
@@ -134,7 +136,7 @@ pub fn add_product(
 pub fn login(username: &str, password: &str) -> ApiResultValue<AuthenticationResponse> {
     let client = reqwest::blocking::Client::new();
     let resp = client
-        .post(format!("{}/v1/authenticate", *API_URL))
+        .post(format!("{}/v2/authenticate", *API_URL))
         .json(&HashMap::from([
             ("username", &username),
             ("password", &password),
@@ -154,7 +156,7 @@ pub fn login(username: &str, password: &str) -> ApiResultValue<AuthenticationRes
 pub fn login_rfid(rfid: &str) -> Option<AuthenticationResponse> {
     let client = reqwest::blocking::Client::new();
     let resp = client
-        .post(format!("{}/v1/authenticate/rfid", *API_URL))
+        .post(format!("{}/v2/authenticate/rfid", *API_URL))
         .json(&HashMap::from([
             ("rfid", &rfid),
             ("rvTerminalSecret", &RV_TERMINAL_SECRET.as_str()),
@@ -183,7 +185,7 @@ pub struct UserInfo {
     pub money_balance: i32,
     pub role: String,
     #[serde(rename = "privacyLevel")]
-    pub privacy_level: u8
+    pub privacy_level: u8,
 }
 
 pub trait UserInfoTrait {
