@@ -676,6 +676,7 @@ fn multibuy(
     purchase_items(terminal_io, &barcode, count, credentials);
     TimeoutResult::RESULT(())
 }
+
 fn purchase_items(
     terminal_io: &mut TerminalIO,
     barcode: &str,
@@ -730,6 +731,7 @@ fn purchase_items(
         }
     }
 }
+
 fn change_user_rfid(
     terminal_io: &mut TerminalIO,
     credentials: &rv_api::AuthenticationResponse,
@@ -1239,6 +1241,7 @@ fn change_box_properties(
 
     TimeoutResult::RESULT(())
 }
+
 fn change_product_properties(
     credentials: &rv_api::AuthenticationResponse,
     terminal_io: &mut TerminalIO,

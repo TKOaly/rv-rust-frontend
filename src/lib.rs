@@ -404,7 +404,7 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
             Ok(u) => u,
         };
 
-        if user.no_email() {
+        if user.email.split("@").count() != 2 {
             if let None = set_valid_email(&credentials, terminal_io) {
                 continue 'main;
             }
@@ -412,6 +412,46 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
 
         if user.full_name == "no name" {
             if let None = set_valid_full_name(&credentials, terminal_io) {
+                continue 'main;
+            }
+        }
+
+        if credentials.password_reset {
+            execute!(terminal_io.writer, Print("Enter new password: ")).unwrap();
+ 
+            let password1 = match utils::readpasswd(terminal_io, INPUT_TIMEOUT_LONG) {
+                TimeoutResult::TIMEOUT => continue 'main,
+                TimeoutResult::RESULT(s) => s,
+            };
+
+            utils::printline(terminal_io, "");
+            execute!(terminal_io.writer, Print("Enter new password again: ")).unwrap();
+            
+            let password2 = match utils::readpasswd(terminal_io, INPUT_TIMEOUT_LONG) {
+                TimeoutResult::TIMEOUT => continue 'main,
+                TimeoutResult::RESULT(s) => s,
+            };
+
+            utils::printline(terminal_io, "");
+
+            if password1.is_empty() {
+                utils::printline(
+                    terminal_io,
+                    "Empty password is not allowed! Password not changed.",
+                );
+                continue 'main;
+            } else if password1 == password2 {
+                match rv_api::change_password(&credentials, &password1).unwrap() {
+                    rv_api::ApiResult::Success => {
+                        utils::printline(terminal_io, "New password successfully changed.");
+                    }
+                    rv_api::ApiResult::Fail(msg) => {
+                        utils::print_error_line(terminal_io, &format!("Password change failed: {msg}"));
+                        continue 'main;
+                    }
+                }
+            } else {
+                utils::printline(terminal_io, "Passwords do not match! Password not changed.");
                 continue 'main;
             }
         }
