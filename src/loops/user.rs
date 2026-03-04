@@ -866,6 +866,26 @@ pub fn user_loop(terminal_io: &mut TerminalIO, credentials: &rv_api::Authenticat
                     }
                     _ => (),
                 },
+                Ok(InputEvent::Barcode(barcode)) => {
+                    command = barcode.trim().to_string();
+                    utils::printline(terminal_io, "\r\n");
+                    if command.is_empty() {
+                        break 'main; // Logout
+                    } else if command == "exit" {
+                        disable_raw_mode().unwrap();
+                        exit(0);
+                    } else if Regex::new("^[0-9]+$").expect("").is_match(&command) {
+                        purchase_items(terminal_io, &command, 1, credentials);
+                        printline(terminal_io, "");
+                        break;
+                    } else {
+                        utils::print_error_line(
+                            terminal_io,
+                            &format!("unknown command: {}\r\n", &command),
+                        );
+                        break;
+                    }
+                }
                 Ok(InputEvent::Rfid(_)) => {
                     // Logout
                     return;
