@@ -14,7 +14,7 @@ pub struct AuthenticationResponse {
     #[serde(rename = "accessToken")]
     access_token: String,
     #[serde(rename = "passwordReset")]
-    pub password_reset: bool
+    pub password_reset: bool,
 }
 
 #[derive(Deserialize)]
@@ -351,6 +351,34 @@ pub fn change_password_admin(
             String::from("Bearer ") + &credentials.access_token,
         )
         .json(&HashMap::from([("password", password)]))
+        .send()
+        .expect("api error");
+    match resp.status().as_u16() {
+        200 => Ok(ApiResult::Success),
+        404 => Ok(ApiResult::Fail(
+            "User with the given username not found".to_string(),
+        )),
+        400 => Ok(ApiResult::Fail(
+            "Missing or invalid fields in request".to_string(),
+        )),
+        401 => Ok(ApiResult::Fail("Not authorized".to_string())),
+        code => Ok(ApiResult::Fail(format!("http response {code}"))),
+    }
+}
+
+pub fn change_role_admin(
+    credentials: &AuthenticationResponse,
+    user_id: i32,
+    role: &str,
+) -> Result<ApiResult, reqwest::Error> {
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .post(format!("{}/v1/admin/users/{user_id}/changeRole", *API_URL))
+        .header(
+            "Authorization",
+            String::from("Bearer ") + &credentials.access_token,
+        )
+        .json(&HashMap::from([("role", role)]))
         .send()
         .expect("api error");
     match resp.status().as_u16() {

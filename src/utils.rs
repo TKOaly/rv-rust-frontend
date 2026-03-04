@@ -2,7 +2,7 @@ use crate::{input::InputEvent, TerminalIO, INPUT_TIMEOUT_SHORT};
 
 use super::input;
 use crossterm::{
-    cursor,
+    cursor::{self, RestorePosition, SavePosition},
     event::{Event, KeyCode, KeyEvent},
     execute,
     style::{Print, PrintStyledContent, Stylize},
@@ -136,6 +136,17 @@ pub fn print_error_line(terminal_io: &mut TerminalIO, s: &str) {
         Print("\r\n")
     )
     .unwrap();
+}
+
+pub fn print_rv_logo(terminal_io: &mut TerminalIO) {
+    static RV_LOGO: LazyLock<String> = load_ascii!("../ascii/logo.txt");
+    execute!(
+        terminal_io.writer,
+        SavePosition,
+        cursor::MoveTo(0, 3),
+        PrintStyledContent(RV_LOGO.to_string().yellow()),
+        RestorePosition
+    );
 }
 
 pub fn readpasswd(terminal_io: &mut TerminalIO, timeout: Duration) -> TimeoutResult<String> {

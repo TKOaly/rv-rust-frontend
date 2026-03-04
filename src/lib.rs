@@ -7,11 +7,11 @@ use crossterm::{
     cursor::{self, RestorePosition, SavePosition},
     event::{Event, KeyCode},
     execute, queue,
-    style::{Print, PrintStyledContent, Stylize},
+    style::Print,
     terminal::{self, enable_raw_mode, EnterAlternateScreen},
 };
 
-use rv_api::{login_rfid, ApiResult, ApiResultValue, UserInfoTrait};
+use rv_api::{login_rfid, ApiResult, ApiResultValue};
 use std::{
     io::{self, stdout, Result, Stdout, Write},
     sync::{
@@ -20,7 +20,6 @@ use std::{
     },
     time::{Duration, Instant},
 };
-use user_loop::RV_LOGO;
 use utils::{ConfirmResult, TimeoutResult};
 
 pub const INPUT_TIMEOUT_SHORT: Duration = Duration::from_secs(60);
@@ -266,11 +265,8 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
             terminal_io.writer,
             Print("to log in or register\r\n"),
             Print("enter username: "),
-            SavePosition,
-            cursor::MoveTo(0, 3),
-            PrintStyledContent(RV_LOGO.to_string().yellow()),
-            RestorePosition
         )?;
+        utils::print_rv_logo(terminal_io);
         let mut username = String::new();
         loop {
             match &terminal_io.recv.recv().unwrap() {
@@ -300,7 +296,8 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
                 },
                 input::InputEvent::Rfid(rfid) => match login_rfid(&rfid) {
                     Some(credentials) => {
-                        user_loop::user_loop(&credentials, terminal_io);
+                        user_loop::user_loop(terminal_io, &credentials);
+                        (&terminal_io, &credentials);
                         continue 'main;
                     }
                     None => {
@@ -343,6 +340,9 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
                     KeyCode::Enter => {
                         break;
                     }
+                    KeyCode::F(5) => {
+                        break;
+                    }
                     _ => (),
                 },
                 Ok(input::InputEvent::Rfid(rfid)) => match login_rfid(&rfid) {
@@ -359,19 +359,19 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
                             Ok(u) => u,
                         };
 
-                        if user.no_email() {
-                            if let None = set_valid_email(&credentials, terminal_io) {
+                        if user.email.split("@").count() != 2 {
+                            if let None = set_valid_email(terminal_io, &credentials) {
                                 continue 'main;
                             }
                         }
 
                         if user.full_name == "no name" {
-                            if let None = set_valid_full_name(&credentials, terminal_io) {
+                            if let None = set_valid_full_name(terminal_io, &credentials) {
                                 continue 'main;
                             }
                         }
 
-                        user_loop::user_loop(&credentials, terminal_io);
+                        user_loop::user_loop(terminal_io, &credentials);
                         continue 'main;
                     }
                     None => {
@@ -405,20 +405,20 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
         };
 
         if user.email.split("@").count() != 2 {
-            if let None = set_valid_email(&credentials, terminal_io) {
+            if let None = set_valid_email(terminal_io, &credentials) {
                 continue 'main;
             }
         }
 
         if user.full_name == "no name" {
-            if let None = set_valid_full_name(&credentials, terminal_io) {
+            if let None = set_valid_full_name(terminal_io, &credentials) {
                 continue 'main;
             }
         }
 
         if credentials.password_reset {
             execute!(terminal_io.writer, Print("Enter new password: ")).unwrap();
- 
+
             let password1 = match utils::readpasswd(terminal_io, INPUT_TIMEOUT_LONG) {
                 TimeoutResult::TIMEOUT => continue 'main,
                 TimeoutResult::RESULT(s) => s,
@@ -426,7 +426,7 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
 
             utils::printline(terminal_io, "");
             execute!(terminal_io.writer, Print("Enter new password again: ")).unwrap();
-            
+
             let password2 = match utils::readpasswd(terminal_io, INPUT_TIMEOUT_LONG) {
                 TimeoutResult::TIMEOUT => continue 'main,
                 TimeoutResult::RESULT(s) => s,
@@ -446,7 +446,10 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
                         utils::printline(terminal_io, "New password successfully changed.");
                     }
                     rv_api::ApiResult::Fail(msg) => {
-                        utils::print_error_line(terminal_io, &format!("Password change failed: {msg}"));
+                        utils::print_error_line(
+                            terminal_io,
+                            &format!("Password change failed: {msg}"),
+                        );
                         continue 'main;
                     }
                 }
@@ -456,13 +459,13 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
             }
         }
 
-        user_loop::user_loop(&credentials, terminal_io);
+        user_loop::user_loop(terminal_io, &credentials);
     }
 }
 
 fn set_valid_email(
-    credentials: &rv_api::AuthenticationResponse,
     terminal_io: &mut TerminalIO,
+    credentials: &rv_api::AuthenticationResponse,
 ) -> Option<()> {
     utils::printline(
         terminal_io,
@@ -508,8 +511,8 @@ fn set_valid_email(
 }
 
 fn set_valid_full_name(
-    credentials: &rv_api::AuthenticationResponse,
     terminal_io: &mut TerminalIO,
+    credentials: &rv_api::AuthenticationResponse,
 ) -> Option<()> {
     utils::printline(
         terminal_io,
@@ -534,7 +537,7 @@ fn set_valid_full_name(
 
     match rv_api::change_username(credentials, &full_name) {
         Ok(apiresult) => {
-            if let ApiResult::Fail(e) = apiresult {
+            if let ApiResult::Fail(_) = apiresult {
                 utils::printline(
                     terminal_io,
                     "Error encountered when connecting to backend, try again",
