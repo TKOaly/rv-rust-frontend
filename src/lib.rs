@@ -1,19 +1,16 @@
 pub mod input;
-mod rv_api;
 mod loops;
+mod rv_api;
 mod utils;
 
 use crossterm::{
-    cursor::self,
-    execute,
+    cursor, execute,
     terminal::{enable_raw_mode, EnterAlternateScreen},
 };
 
 use std::{
     io::{self, stdout, Result, Stdout, Write},
-    sync::{
-        mpsc::Receiver,
-    },
+    sync::mpsc::Receiver,
     time::Duration,
 };
 

@@ -1,9 +1,9 @@
 use crate::input;
-use crate::utils;
 use crate::rv_api;
+use crate::utils;
+use crate::utils::clear_terminal;
 use crate::utils::print_title;
 use crate::utils::printline;
-use crate::utils::clear_terminal;
 use crate::utils::TimeoutResult;
 use crate::TerminalIO;
 use crate::INPUT_TIMEOUT_LONG;
@@ -14,7 +14,7 @@ use crossterm::{
     event::{Event, KeyCode},
     execute, queue,
     style::{Print, PrintStyledContent, Stylize},
-    terminal
+    terminal,
 };
 use input::InputEvent;
 use std::sync::mpsc::RecvTimeoutError;

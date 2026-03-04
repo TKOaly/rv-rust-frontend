@@ -1,6 +1,6 @@
-mod user;
-mod setting;
 mod management;
+mod setting;
+mod user;
 
 use crate::input;
 use crate::rv_api;
@@ -17,19 +17,15 @@ use crossterm::{
     terminal,
 };
 
+use rv_api::{login_rfid, ApiResult, ApiResultValue};
 use std::{
     io,
-    sync::{
-        mpsc::RecvTimeoutError,
-        LazyLock,
-    },
+    sync::{mpsc::RecvTimeoutError, LazyLock},
     time::{Duration, Instant},
 };
 use utils::{ConfirmResult, TimeoutResult};
-use rv_api::{login_rfid, ApiResult, ApiResultValue};
 
 static DEVELOPMENT_MODE: LazyLock<bool> = LazyLock::new(|| std::env::var("DEVELOPMENT").is_ok());
-
 
 fn register(username: &str, terminal_io: &mut TerminalIO) -> TimeoutResult<()> {
     utils::printline(

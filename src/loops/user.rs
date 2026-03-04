@@ -2,7 +2,6 @@ use super::management;
 use super::setting;
 
 use crate::input;
-use crate::utils;
 use crate::rv_api;
 use crate::rv_api::get_product_info;
 use crate::rv_api::get_user_info;
@@ -11,6 +10,7 @@ use crate::rv_api::ApiResultPurchaseItem;
 use crate::rv_api::ApiResultPurchaseItemFailType;
 use crate::rv_api::ApiResultValue;
 use crate::rv_api::UserInfoTrait;
+use crate::utils;
 use crate::utils::load_ascii;
 use crate::utils::print_error_line;
 use crate::utils::print_title;
