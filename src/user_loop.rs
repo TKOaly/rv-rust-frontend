@@ -686,7 +686,7 @@ fn purchase_items(
     match rv_api::purchase_item(&credentials, &barcode, &count).unwrap() {
         ApiResultPurchaseItem::Success => {
             let product_info = rv_api::get_product_info(&credentials, &barcode).unwrap();
-            if product_info.barcode == "42615374" {
+            if product_info.name == "Coffee" {
                 // Coffee purchase shill
                 utils::printline(terminal_io, &COFFEE_MSG);
             }
