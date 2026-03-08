@@ -681,6 +681,43 @@ fn change_user_password_admin(
     TimeoutResult::RESULT(())
 }
 
+fn generate_temp_password_admin(
+    timeout: Duration,
+    terminal_io: &mut TerminalIO,
+    credentials: &rv_api::AuthenticationResponse,
+) -> TimeoutResult<()> {
+    print_title(terminal_io, "Generate temporary password for user");
+    execute!(terminal_io.writer, Print("Enter username: ")).unwrap();
+    let username;
+    match utils::readline(terminal_io, timeout) {
+        TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
+        TimeoutResult::RESULT(s) => username = s,
+    }
+
+    let user = match rv_api::get_user_info_by_username(credentials, &username).unwrap() {
+        ApiResultValue::Fail(msg) => {
+            print_error_line(terminal_io, &msg);
+            utils::printline(terminal_io, "");
+            return TimeoutResult::RESULT(());
+        }
+        ApiResultValue::Success(user) => user,
+    };
+
+    match rv_api::generate_temp_password(credentials, user.user_id).unwrap() {
+        rv_api::ApiResult::Success => {
+            utils::printline(terminal_io, &format!("Temperary password successfully for {}.", user.username));
+        }
+        rv_api::ApiResult::Fail(msg) => {
+            utils::print_error_line(terminal_io, &format!("Password change failed: {msg}"));
+        }
+    }
+
+    utils::printline(terminal_io, "");
+    utils::confirm_enter_to_continue(terminal_io);
+    utils::printline(terminal_io, "");
+    TimeoutResult::RESULT(())
+}
+
 fn process_barcode_admin(
     barcode: &str,
     terminal_io: &mut TerminalIO,
@@ -771,7 +808,6 @@ pub fn management_mode_loop(
                         }
                         'p' => {
                             printline(terminal_io, "\n");
-
                             match change_user_password_admin(
                                 INPUT_TIMEOUT_LONG,
                                 terminal_io,
@@ -782,6 +818,18 @@ pub fn management_mode_loop(
                             }
                             printline(terminal_io, "");
                             break;
+                        }
+                        'e' => {
+                            printline(terminal_io, "");
+                            match generate_temp_password_admin(INPUT_TIMEOUT_LONG, terminal_io, &credentials) {
+                                TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
+                                TimeoutResult::RESULT(_) => (),
+                            }
+                            printline(terminal_io, "");
+                            break;
+                        }
+                        'c' => {
+                            clear_terminal(terminal_io);
                         }
                         '0'..='9' => {
                             terminal_io.writer.execute(Print(c)).unwrap();

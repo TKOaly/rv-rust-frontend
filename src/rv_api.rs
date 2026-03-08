@@ -220,6 +220,7 @@ pub struct LeaderboardRow {
     pub saldo: i32,
     pub name: String,
 }
+
 pub fn get_leaderboard() -> Result<ApiResultValue<Vec<LeaderboardRow>>, reqwest::Error> {
     let client = reqwest::blocking::Client::new();
     let resp = client
@@ -491,6 +492,30 @@ pub fn change_username(
     }
 }
 
+pub fn generate_temp_password(
+    credentials: &AuthenticationResponse,
+    user_id: i32
+)  -> Result<ApiResult, reqwest::Error> {
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .patch(format!("{}/v1/email/temp_password", *API_URL))
+        .header(
+            "Authorization",
+            String::from("Bearer ") + &credentials.access_token,
+        )
+        .json(&HashMap::from([("userId", user_id)]))
+        .send()
+        .expect("api error");
+    match resp.status().as_u16() {
+        201 => Ok(ApiResult::Success),
+        400 => Ok(ApiResult::Fail(
+            "Missing or invalid fields in request".to_string(),
+        )),
+        401 => Ok(ApiResult::Fail("Not authorized".to_string())),
+        code => Ok(ApiResult::Fail(format!("http response {code}"))),
+    }
+}
+
 pub fn change_full_name(
     credentials: &AuthenticationResponse,
     fullname: &str,
@@ -557,6 +582,7 @@ pub enum ApiResultPurchaseItem {
     Success,
     Fail(ApiResultPurchaseItemFail),
 }
+
 pub fn purchase_item(
     credentials: &AuthenticationResponse,
     barcode: &str,
