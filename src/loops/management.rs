@@ -681,6 +681,31 @@ fn change_user_password_admin(
     TimeoutResult::RESULT(())
 }
 
+fn process_barcode_admin(
+    barcode: &str,
+    terminal_io: &mut TerminalIO,
+    credentials: &rv_api::AuthenticationResponse,
+) -> TimeoutResult<()> {
+    if let Some(_) = rv_api::get_product_info(credentials, barcode) {
+        match buy_in_product(barcode, terminal_io, credentials) {
+            TimeoutResult::RESULT(_) => return TimeoutResult::RESULT(()),
+            TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
+        }
+    }
+    if let Some(_) = rv_api::get_box_info_admin(barcode, credentials).unwrap() {
+        match buy_in_box(barcode, terminal_io, credentials) {
+            TimeoutResult::RESULT(_) =>  return TimeoutResult::RESULT(()),
+            TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
+        }
+    }
+    print_error_line(
+        terminal_io,
+        &format!("No box or product found with barcode {barcode}"),
+    );
+    new_item(barcode, terminal_io, credentials);
+    return TimeoutResult::RESULT(());
+}
+
 pub fn management_mode_loop(
     terminal_io: &mut TerminalIO,
     credentials: &rv_api::AuthenticationResponse,
@@ -783,28 +808,10 @@ pub fn management_mode_loop(
                             clear_terminal(terminal_io);
                             break 'main;
                         } else if Regex::new("^[0-9]+$").expect("").is_match(&command) {
-                            let barcode = &command;
-                            if let Some(_) = rv_api::get_product_info(credentials, barcode) {
-                                match buy_in_product(barcode, terminal_io, credentials) {
-                                    TimeoutResult::RESULT(_) => (),
-                                    TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
-                                }
-                                break;
+                            match process_barcode_admin(&command, terminal_io, credentials) {
+                                TimeoutResult::RESULT(_) => (),
+                                TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
                             }
-                            if let Some(_) =
-                                rv_api::get_box_info_admin(barcode, credentials).unwrap()
-                            {
-                                match buy_in_box(barcode, terminal_io, credentials) {
-                                    TimeoutResult::RESULT(_) => (),
-                                    TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
-                                }
-                                break;
-                            }
-                            print_error_line(
-                                terminal_io,
-                                &format!("No box or product found with barcode {barcode}"),
-                            );
-                            new_item(&command, terminal_io, credentials);
                             break;
                         } else {
                             utils::print_error_line(
@@ -820,34 +827,14 @@ pub fn management_mode_loop(
                     _ => (),
                 },
                 Ok(InputEvent::Barcode(barcode)) => {
-                    command = barcode.trim().to_string();
-                    utils::printline(terminal_io, "\r\n");
-                    if command.is_empty() {
-                        clear_terminal(terminal_io);
-                        break 'main;
-                    } else if Regex::new("^[0-9]+$").expect("").is_match(&command) {
-                        let barcode = &command;
-                        if let Some(_) = rv_api::get_product_info(credentials, barcode) {
-                            match buy_in_product(barcode, terminal_io, credentials) {
-                                TimeoutResult::RESULT(_) => (),
-                                TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
-                            }
-                            break;
+                    let trimend_barcode = barcode.trim();
+                    if Regex::new("^[0-9]+$").expect("").is_match(trimend_barcode) {
+                        match process_barcode_admin(trimend_barcode, terminal_io, credentials) {
+                            TimeoutResult::RESULT(_) => (),
+                            TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
                         }
-                        if let Some(_) = rv_api::get_box_info_admin(barcode, credentials).unwrap() {
-                            match buy_in_box(barcode, terminal_io, credentials) {
-                                TimeoutResult::RESULT(_) => (),
-                                TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
-                            }
-                            break;
-                        }
-                        print_error_line(
-                            terminal_io,
-                            &format!("No box or product found with barcode {barcode}"),
-                        );
-                        new_item(&command, terminal_io, credentials);
-                        break;
                     }
+                    break;
                 }
                 Ok(InputEvent::Rfid(_)) => {
                     // Logout
