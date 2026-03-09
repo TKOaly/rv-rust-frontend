@@ -14,6 +14,7 @@ use crate::utils::print_error_line;
 use crate::utils::print_title;
 use crate::utils::printline;
 use crate::utils::readline;
+use crate::utils::readline_barcode;
 use crate::utils::TimeoutResult;
 use crate::TerminalIO;
 use crate::INPUT_TIMEOUT_LONG;
@@ -340,7 +341,7 @@ fn change_item_properties(
 ) -> TimeoutResult<()> {
     print_title(terminal_io, "Change item properties");
     utils::printline(terminal_io, "Enter barcode:");
-    let barcode = match readline(terminal_io, INPUT_TIMEOUT_LONG) {
+    let barcode = match readline_barcode(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::RESULT(s) => {
             if Regex::new("^[0-9]+$").unwrap().is_match(&s) {
                 s
@@ -388,7 +389,7 @@ fn change_box_properties(
         &format!("Current itembarcode: '{product_barcode}'"),
     );
     printline(terminal_io, &format!("Modify or keep [{product_barcode}]:"));
-    let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+    let input_line = match readline_barcode(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
         TimeoutResult::RESULT(s) => s,
     };

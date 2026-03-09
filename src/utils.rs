@@ -282,6 +282,51 @@ fn readline_internal(
     Ok(TimeoutResult::RESULT(ret.trim().to_string()))
 }
 
+pub fn readline_barcode(
+    terminal_io: &mut TerminalIO,
+    timeout: Duration,
+) -> TimeoutResult<String> {
+    let mut barcode = String::new();
+    loop {
+        match terminal_io.recv.recv_timeout(timeout) {
+            Err(RecvTimeoutError::Timeout) => {
+                printline(terminal_io, "");
+                return TimeoutResult::TIMEOUT;
+            }
+            Ok(input::InputEvent::Terminal(Event::Key(ev))) => match ev.code {
+                KeyCode::Char(c) => {
+                    if c.is_ascii_digit() {
+                        barcode.push(c);
+                        execute!(terminal_io.writer, Print(c)).unwrap();
+                    }
+                }
+                KeyCode::Backspace => {
+                    if !barcode.is_empty() {
+                        execute!(
+                            terminal_io.writer,
+                            cursor::MoveLeft(1),
+                            Print(" "),
+                            cursor::MoveLeft(1)
+                        ).unwrap();
+                        barcode.pop();
+                    }
+                }
+                KeyCode::Enter => {
+                    break;
+                }
+                _ => (),
+            },
+            Ok(input::InputEvent::Barcode(input)) =>  {
+                barcode = input;
+                break;
+            }
+            _ => (),
+        }
+    }
+    printline(terminal_io, "");
+    return TimeoutResult::RESULT(barcode.trim().to_string());
+}
+
 pub fn is_barcode(input: &str) -> bool {
     if !input.chars().all(|chr| chr.is_ascii_digit()) {
         return false;
