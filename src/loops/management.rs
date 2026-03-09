@@ -31,6 +31,25 @@ use rv_api::ApiResult;
 use std::{sync::mpsc::RecvTimeoutError, time::Duration};
 use user::{buy_in_box, buy_in_product, search_products};
 
+fn input_calculator(input: &str) -> Option<i32> {
+    if input.is_empty() {
+        return None;
+    }
+
+    let numbers = input.split("*");
+    let mut product: Option<i32> = None;
+
+    for number in numbers {
+        let num1 = number.parse::<i32>().ok()?;
+        product = Some(match product {
+            Some(num2) => num2 * num1,
+            None => num1,
+        });
+    }
+
+    product
+}
+
 fn new_product(
     barcode: &str,
     terminal_io: &mut TerminalIO,
@@ -136,7 +155,7 @@ fn new_product(
             printline(terminal_io, "Nothing changed.");
             break suggested_stock;
         }
-        match utils::calculator_input(&input_line) {
+        match input_calculator(&input_line) {
             Some(stock) => {
                 break stock;
             }

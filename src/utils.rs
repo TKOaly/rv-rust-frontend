@@ -282,30 +282,6 @@ fn readline_internal(
     Ok(TimeoutResult::RESULT(ret.trim().to_string()))
 }
 
-pub fn calculator_input(input: &str) -> Option<i32> {
-    if input.is_empty() {
-        return None;
-    }
-
-    let caps = Regex::new("^(?<lhs>[0-9]+)(?:\\*(?<rhs>[0-9]+))?$")
-        .unwrap()
-        .captures(&input);
-
-    if let Some(caps) = caps {
-        let lhs = caps["lhs"].parse::<i32>().ok()?;
-
-        if caps.name("rhs").is_none() {
-            return Some(lhs);
-        }
-
-        let rhs = caps["rhs"].parse::<i32>().ok()?;
-
-        return Some(lhs * rhs);
-    }
-
-    None
-}
-
 pub fn is_barcode(input: &str) -> bool {
     if !input.chars().all(|chr| chr.is_ascii_digit()) {
         return false;
