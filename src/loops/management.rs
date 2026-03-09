@@ -7,6 +7,7 @@ use crate::rv_api::get_product_info;
 use crate::rv_api::update_box;
 use crate::rv_api::ApiResultValue;
 use crate::rv_api::ProductCategory;
+use crate::rv_api::UserInfo;
 use crate::utils;
 use crate::utils::clear_terminal;
 use crate::utils::print_error_line;
@@ -705,13 +706,76 @@ fn generate_temp_password_admin(
 
     match rv_api::generate_temp_password(credentials, user.user_id).unwrap() {
         rv_api::ApiResult::Success => {
-            utils::printline(terminal_io, &format!("Temperary password successfully for {}.", user.username));
+            utils::printline(
+                terminal_io,
+                &format!("Temperary password successfully for {}.", user.username),
+            );
         }
         rv_api::ApiResult::Fail(msg) => {
             utils::print_error_line(terminal_io, &format!("Password change failed: {msg}"));
         }
     }
 
+    utils::printline(terminal_io, "");
+    utils::confirm_enter_to_continue(terminal_io);
+    utils::printline(terminal_io, "");
+    TimeoutResult::RESULT(())
+}
+
+fn search_for_user(
+    timeout: Duration,
+    terminal_io: &mut TerminalIO,
+    credentials: &rv_api::AuthenticationResponse,
+) -> TimeoutResult<()> {
+    print_title(
+        terminal_io,
+        "Search for user whit email or user's real name",
+    );
+    execute!(
+        terminal_io.writer,
+        Print("Enter email or  user's real name: ")
+    )
+    .unwrap();
+
+    let input = match utils::readline(terminal_io, timeout) {
+        TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
+        TimeoutResult::RESULT(s) => s,
+    };
+
+    let mut users: Vec<UserInfo> = Vec::new();
+
+    if input.split("@").count() == 2 {
+        let user = match rv_api::get_user_info_by_email(credentials, &input).unwrap() {
+            ApiResultValue::Fail(msg) => {
+                print_error_line(terminal_io, &msg);
+                utils::printline(terminal_io, "");
+                return TimeoutResult::RESULT(());
+            }
+            ApiResultValue::Success(user) => user,
+        };
+        users.push(user);
+    } else {
+        let user = match rv_api::get_user_info_by_full_name(credentials, &input).unwrap() {
+            ApiResultValue::Fail(msg) => {
+                print_error_line(terminal_io, &msg);
+                utils::printline(terminal_io, "");
+                return TimeoutResult::RESULT(());
+            }
+            ApiResultValue::Success(user) => user,
+        };
+        users.push(user);
+    }
+    utils::printline(terminal_io, "");
+    utils::print_title(terminal_io, "Found users:");
+    for user in users {
+        utils::printline(
+            terminal_io,
+            &format!(
+                "username: {} email: {} full name: {}",
+                user.username, user.email, user.full_name
+            ),
+        );
+    }
     utils::printline(terminal_io, "");
     utils::confirm_enter_to_continue(terminal_io);
     utils::printline(terminal_io, "");
@@ -731,7 +795,7 @@ fn process_barcode_admin(
     }
     if let Some(_) = rv_api::get_box_info_admin(barcode, credentials).unwrap() {
         match buy_in_box(barcode, terminal_io, credentials) {
-            TimeoutResult::RESULT(_) =>  return TimeoutResult::RESULT(()),
+            TimeoutResult::RESULT(_) => return TimeoutResult::RESULT(()),
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
         }
     }
@@ -804,7 +868,16 @@ pub fn management_mode_loop(
                                 TimeoutResult::RESULT(_) => (),
                             }
                             printline(terminal_io, "");
-                            continue 'main;
+                            break;
+                        }
+                        's' => {
+                            printline(terminal_io, "");
+                            match search_for_user(terminal_io, &credentials) {
+                                TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
+                                TimeoutResult::RESULT(_) => (),
+                            }
+                            printline(terminal_io, "");
+                            break;
                         }
                         'p' => {
                             printline(terminal_io, "\n");
@@ -821,7 +894,11 @@ pub fn management_mode_loop(
                         }
                         'e' => {
                             printline(terminal_io, "");
-                            match generate_temp_password_admin(INPUT_TIMEOUT_LONG, terminal_io, &credentials) {
+                            match generate_temp_password_admin(
+                                INPUT_TIMEOUT_LONG,
+                                terminal_io,
+                                &credentials,
+                            ) {
                                 TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
                                 TimeoutResult::RESULT(_) => (),
                             }

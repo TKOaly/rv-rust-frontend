@@ -288,6 +288,62 @@ pub fn get_user_info_by_username(
     })
 }
 
+pub fn get_user_info_by_email(
+    credentials: &AuthenticationResponse,
+    email: &str,
+) -> Result<ApiResultValue<UserInfo>, reqwest::Error> {
+    #[derive(Deserialize)]
+    struct Hax {
+        user: UserInfo,
+    }
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .get(format!(
+            "{}/v1/admin/utils/getUserByEmail/{email}",
+            *API_URL
+        ))
+        .header(
+            "Authorization",
+            String::from("Bearer ") + &credentials.access_token,
+        )
+        .send()
+        .expect("api error");
+    Ok(match resp.status().as_u16() {
+        200 => ApiResultValue::Success(resp.json::<Hax>().map(|v| v.user).unwrap()),
+        404 => ApiResultValue::Fail("User with the given email not found".to_string()),
+        401 => ApiResultValue::Fail("Not authorized".to_string()),
+        code => ApiResultValue::Fail(format!("http response {code}")),
+    })
+}
+
+pub fn get_user_info_by_full_name(
+    credentials: &AuthenticationResponse,
+    full_name: &str,
+) -> Result<ApiResultValue<UserInfo>, reqwest::Error> {
+    #[derive(Deserialize)]
+    struct Hax {
+        user: UserInfo,
+    }
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .get(format!(
+            "{}/v1/admin/utils/getUserByFullName/{full_name}",
+            *API_URL
+        ))
+        .header(
+            "Authorization",
+            String::from("Bearer ") + &credentials.access_token,
+        )
+        .send()
+        .expect("api error");
+    Ok(match resp.status().as_u16() {
+        200 => ApiResultValue::Success(resp.json::<Hax>().map(|v| v.user).unwrap()),
+        404 => ApiResultValue::Fail("User with the given full name not found".to_string()),
+        401 => ApiResultValue::Fail("Not authorized".to_string()),
+        code => ApiResultValue::Fail(format!("http response {code}")),
+    })
+}
+
 pub enum ApiResultValue<T> {
     Success(T),
     Fail(String),
@@ -494,8 +550,8 @@ pub fn change_username(
 
 pub fn generate_temp_password(
     credentials: &AuthenticationResponse,
-    user_id: i32
-)  -> Result<ApiResult, reqwest::Error> {
+    user_id: i32,
+) -> Result<ApiResult, reqwest::Error> {
     let client = reqwest::blocking::Client::new();
     let resp = client
         .patch(format!("{}/v1/email/temp_password", *API_URL))
