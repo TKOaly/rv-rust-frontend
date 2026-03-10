@@ -142,9 +142,9 @@ fn register_device_input(vendor: u16, product: u16, sender: Sender<InputEvent>) 
     let _reg: rusb::Registration<Context> = Some(
         rusb::HotplugBuilder::new()
             .enumerate(true)
-            .vendor_id(BARCODE2_VENDOR)
-            .product_id(BARCODE2_PRODUCT)
-            .register(&ctx, Box::new(HotPlugHandler { chan: sender2 }))
+            .vendor_id(vendor)
+            .product_id(product)
+            .register(&ctx, Box::new(HotPlugHandler { chan: sender }))
             .unwrap(),
     )
     .unwrap();

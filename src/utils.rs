@@ -282,10 +282,7 @@ fn readline_internal(
     Ok(TimeoutResult::RESULT(ret.trim().to_string()))
 }
 
-pub fn readline_barcode(
-    terminal_io: &mut TerminalIO,
-    timeout: Duration,
-) -> TimeoutResult<String> {
+pub fn readline_barcode(terminal_io: &mut TerminalIO, timeout: Duration) -> TimeoutResult<String> {
     let mut barcode = String::new();
     loop {
         match terminal_io.recv.recv_timeout(timeout) {
@@ -307,7 +304,8 @@ pub fn readline_barcode(
                             cursor::MoveLeft(1),
                             Print(" "),
                             cursor::MoveLeft(1)
-                        ).unwrap();
+                        )
+                        .unwrap();
                         barcode.pop();
                     }
                 }
@@ -316,7 +314,7 @@ pub fn readline_barcode(
                 }
                 _ => (),
             },
-            Ok(input::InputEvent::Barcode(input)) =>  {
+            Ok(input::InputEvent::Barcode(input)) => {
                 barcode = input;
                 break;
             }
@@ -366,4 +364,23 @@ pub fn is_barcode(input: &str) -> bool {
     let check_sum = (10 - (sum % 10)) % 10;
     println!("{}", check_sum);
     return check_sum == *code.last().unwrap();
+}
+
+pub fn calculator_input(input: &str) -> Option<i32> {
+    if input.is_empty() {
+        return None;
+    }
+
+    let numbers = input.split("*");
+    let mut product: Option<i32> = None;
+
+    for number in numbers {
+        let num1 = number.parse::<i32>().ok()?;
+        product = Some(match product {
+            Some(num2) => num2 * num1,
+            None => num1,
+        });
+    }
+
+    product
 }
