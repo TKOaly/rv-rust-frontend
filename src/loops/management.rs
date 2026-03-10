@@ -449,6 +449,22 @@ fn change_product_properties(
             return TimeoutResult::RESULT(());
         }
     };
+
+    let mut barcode = product.barcode;
+    utils::printline(terminal_io, &format!("Current description: '{barcode}'"));
+    utils::printline(terminal_io, &format!("Modify or keep [{barcode}]:"));
+
+    let input_line = match utils::readline_barcode(terminal_io, INPUT_TIMEOUT_LONG) {
+        TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
+        TimeoutResult::RESULT(s) => s,
+    };
+
+    if input_line.len() > 0 && Regex::new("^[0-9]+").expect("").is_match(&input_line) {
+        barcode = input_line.to_string();
+    } else {
+        printline(terminal_io, "Nothing changed.");
+    }
+
     let mut name = product.name;
     utils::printline(terminal_io, &format!("Current description: '{name}'"));
     utils::printline(terminal_io, &format!("Modify or keep [{name}]:"));

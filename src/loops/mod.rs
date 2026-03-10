@@ -397,7 +397,7 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
                         break;
                     }
                     KeyCode::F(5) => {
-                        break;
+                        continue 'main;
                     }
                     _ => (),
                 },
