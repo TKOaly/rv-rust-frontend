@@ -15,7 +15,6 @@ pub enum TimeoutResult<T> {
 }
 
 use core::str;
-use regex::Regex;
 use std::{
     fs,
     process::{Command, ExitStatus},

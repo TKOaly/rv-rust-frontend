@@ -2,12 +2,18 @@ use crossterm;
 use evdev::{self, InputEventKind};
 use rusb::{Context, UsbContext};
 use std::{
+    fs,
+    io::{BufRead, BufReader},
+    os::unix::net::UnixListener,
+    path::Path,
     sync::{
         self,
         mpsc::{Receiver, Sender},
     },
     thread,
 };
+
+use crate::DEVELOPMENT_MODE;
 
 const RFID_VENDOR: u16 = 0x413d;
 const RFID_PRODUCT: u16 = 0x2107;
@@ -194,6 +200,49 @@ impl<T: rusb::UsbContext> rusb::Hotplug<T> for HotPlugHandler {
     fn device_left(&mut self, _device: rusb::Device<T>) {}
 }
 
+fn deserialize_software_input_event(line: &str) -> Result<InputEvent, String> {
+    let line = line.trim();
+    let pos = line
+        .find('|')
+        .ok_or_else(|| format!("missing '|' in: {}", line))?;
+    let event = &line[..pos];
+    let string = &line[pos + 1..];
+
+    match event {
+        "Barcode" => Ok(InputEvent::Barcode(string.to_string())),
+        "RFID" => Ok(InputEvent::Rfid(string.to_string())),
+        other => Err(format!("unknown event: {}", other)),
+    }
+}
+
+fn software_input(sender: Sender<InputEvent>) {
+    thread::spawn(move || {
+        let listener = UnixListener::bind("/tmp/rvterminal.sock").expect("Failed to bind");
+
+        let path = "/tmp/rvterminal.sock";
+        if Path::new(path).exists() {
+            fs::remove_file(path).ok();
+        }
+
+        let listener = UnixListener::bind(path).expect("Failed to bind");
+        for stream in listener.incoming() {
+            let stream = stream.unwrap();
+            let reader = BufReader::new(stream);
+            let sender = sender.clone();
+
+            thread::spawn(move || {
+                for line in reader.lines() {
+                    if let Ok(line) = line  {
+                        if let Ok(event) = deserialize_software_input_event(line) {
+                            sender.send(event).unwrap();
+                        }
+                    }
+                }
+            });
+        }
+    });
+}
+
 // Call only once
 pub fn init() -> Receiver<InputEvent> {
     let (sender, receiver) = sync::mpsc::channel::<InputEvent>();
@@ -222,6 +271,10 @@ pub fn init() -> Receiver<InputEvent> {
     thread::spawn(move || {
         register_device_input(BARCODE2_VENDOR, BARCODE2_PRODUCT, sender2);
     });
+
+    if *DEVELOPMENT_MODE {
+        sowftware_input(sender);
+    }
 
     receiver
 }

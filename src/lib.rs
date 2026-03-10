@@ -10,12 +10,15 @@ use crossterm::{
 
 use std::{
     io::{self, stdout, Result, Stdout, Write},
-    sync::mpsc::Receiver,
+    sync::{mpsc::Receiver, LazyLock},
     time::Duration,
 };
 
 pub const INPUT_TIMEOUT_SHORT: Duration = Duration::from_secs(60);
 pub const INPUT_TIMEOUT_LONG: Duration = Duration::from_secs(5 * 60);
+
+pub static DEVELOPMENT_MODE: LazyLock<bool> =
+    LazyLock::new(|| std::env::var("DEVELOPMENT").is_ok());
 
 pub struct TerminalWriter {
     stdout: Stdout,
