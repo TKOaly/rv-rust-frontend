@@ -1,4 +1,7 @@
-use crossterm;
+use crossterm::{
+    self,
+    event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers},
+};
 use evdev::{self, InputEventKind};
 use rusb::{Context, UsbContext};
 use std::{
@@ -200,6 +203,51 @@ impl<T: rusb::UsbContext> rusb::Hotplug<T> for HotPlugHandler {
     fn device_left(&mut self, _device: rusb::Device<T>) {}
 }
 
+fn deserialize_software_keyboard_input_event(key: &str) -> Option<InputEvent> {
+    match key {
+        "Enter" => Some(InputEvent::Terminal(crossterm::event::Event::Key(
+            KeyEvent {
+                code: KeyCode::Enter,
+                modifiers: KeyModifiers::NONE,
+                kind: KeyEventKind::Press,
+                state: KeyEventState::NONE,
+            },
+        ))),
+        "Backspace" => Some(InputEvent::Terminal(crossterm::event::Event::Key(
+            KeyEvent {
+                code: KeyCode::Backspace,
+                modifiers: KeyModifiers::NONE,
+                kind: KeyEventKind::Press,
+                state: KeyEventState::NONE,
+            },
+        ))),
+        key => {
+            if key.starts_with("Fn") {
+                let num = key.replace("Fn", "").parse::<u8>().ok()?;
+                return Some(InputEvent::Terminal(crossterm::event::Event::Key(
+                    KeyEvent {
+                        code: KeyCode::F(num),
+                        modifiers: KeyModifiers::NONE,
+                        kind: KeyEventKind::Press,
+                        state: KeyEventState::NONE,
+                    },
+                )));
+            }
+            if let Some(last) = key.chars().last() {
+                return Some(InputEvent::Terminal(crossterm::event::Event::Key(
+                    KeyEvent {
+                        code: KeyCode::Char(last),
+                        modifiers: KeyModifiers::NONE,
+                        kind: KeyEventKind::Press,
+                        state: KeyEventState::NONE,
+                    },
+                )));
+            }
+            None
+        }
+    }
+}
+
 fn deserialize_software_input_event(line: &str) -> Result<InputEvent, String> {
     let line = line.trim();
     let pos = line
@@ -232,8 +280,8 @@ fn software_input(sender: Sender<InputEvent>) {
 
             thread::spawn(move || {
                 for line in reader.lines() {
-                    if let Ok(line) = line  {
-                        if let Ok(event) = deserialize_software_input_event(line) {
+                    if let Ok(line) = line {
+                        if let Ok(event) = deserialize_software_input_event(&line) {
                             sender.send(event).unwrap();
                         }
                     }
@@ -273,7 +321,7 @@ pub fn init() -> Receiver<InputEvent> {
     });
 
     if *DEVELOPMENT_MODE {
-        sowftware_input(sender);
+        software_input(sender);
     }
 
     receiver
