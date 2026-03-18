@@ -5,6 +5,7 @@ mod user;
 use crate::input;
 use crate::rv_api;
 use crate::utils;
+use crate::utils::clear_terminal;
 use crate::TerminalIO;
 use crate::DEVELOPMENT_MODE;
 use crate::INPUT_TIMEOUT_LONG;
@@ -287,11 +288,7 @@ fn set_valid_full_name(
 
 pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
     'main: loop {
-        execute!(
-            terminal_io.writer,
-            terminal::Clear(terminal::ClearType::All),
-            cursor::MoveTo(0, terminal::size()?.1)
-        )?;
+        clear_terminal(terminal_io);
         let leaderboard = match rv_api::get_leaderboard().unwrap() {
             ApiResultValue::Success(v) => v,
             ApiResultValue::Fail(err) => {

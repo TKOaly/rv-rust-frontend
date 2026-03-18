@@ -265,14 +265,12 @@ fn deserialize_software_input_event(line: &str) -> Result<InputEvent, String> {
 
 fn software_input(sender: Sender<InputEvent>) {
     thread::spawn(move || {
-        let listener = UnixListener::bind("/tmp/rvterminal.sock").expect("Failed to bind");
-
-        let path = "/tmp/rvterminal.sock";
-        if Path::new(path).exists() {
-            fs::remove_file(path).ok();
+        let socket_path = "/tmp/rvterminal.sock";
+        if Path::new(socket_path).exists() {
+            fs::remove_file(socket_path).expect("Failed to remove existing socket");
         }
+        let listener = UnixListener::bind(socket_path).expect("Failed to bind");
 
-        let listener = UnixListener::bind(path).expect("Failed to bind");
         for stream in listener.incoming() {
             let stream = stream.unwrap();
             let reader = BufReader::new(stream);

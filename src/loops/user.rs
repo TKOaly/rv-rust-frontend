@@ -10,17 +10,18 @@ use crate::rv_api::ApiResultPurchaseItem;
 use crate::rv_api::ApiResultPurchaseItemFailType;
 use crate::rv_api::UserInfoTrait;
 use crate::utils;
+use crate::utils::clear_terminal;
 use crate::utils::load_ascii;
 use crate::utils::print_error_line;
 use crate::utils::print_title;
 use crate::utils::printline;
 use crate::utils::purchase_fail_bell;
 use crate::utils::readline;
+use crate::utils::readline_barcode;
 use crate::utils::TimeoutResult;
 use crate::TerminalIO;
 use crate::INPUT_TIMEOUT_LONG;
 use crate::INPUT_TIMEOUT_SHORT;
-use crate::utils::readline_barcode;
 
 use chrono::{DateTime, Local};
 use crossterm::{
@@ -419,11 +420,7 @@ fn print_user_loop_banner(
     terminal_io: &mut TerminalIO,
     credentials: &rv_api::AuthenticationResponse,
 ) {
-    execute!(
-        terminal_io.writer,
-        terminal::Clear(terminal::ClearType::All)
-    )
-    .unwrap();
+    utils::clear_terminal(terminal_io);
     print_user_loop_instructions(terminal_io, credentials);
     printline(terminal_io, "");
 }

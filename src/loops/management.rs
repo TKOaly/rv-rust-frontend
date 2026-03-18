@@ -1026,7 +1026,7 @@ fn search_for_user(
     );
     execute!(
         terminal_io.writer,
-        Print("Enter email or  user's real name: ")
+        Print("Enter email or user's real name: ")
     )
     .unwrap();
 
@@ -1036,8 +1036,10 @@ fn search_for_user(
     };
 
     let mut users: Vec<UserInfo> = Vec::new();
-
-    if input.split("@").count() == 2 {
+    if input.is_empty() {
+        return TimeoutResult::RESULT(());
+    }
+    else if input.split("@").count() == 2 {
         let user = match rv_api::get_user_info_by_email(credentials, &input).unwrap() {
             ApiResultValue::Fail(msg) => {
                 print_error_line(terminal_io, &msg);
@@ -1059,7 +1061,7 @@ fn search_for_user(
         users.push(user);
     }
     utils::printline(terminal_io, "");
-    utils::print_title(terminal_io, "Found users:");
+    utils::print_title(terminal_io, "Found users");
     for user in users {
         utils::printline(
             terminal_io,
@@ -1100,39 +1102,57 @@ fn process_barcode_admin(
     return TimeoutResult::RESULT(());
 }
 
+fn print_management_loop_instructions(terminal_io: &mut TerminalIO) {
+    queue!(
+        terminal_io.writer,
+        cursor::MoveTo(0, terminal::size()?.1),
+        Print("=== management mode ===\r\n"),
+        PrintStyledContent("<barcode>".dark_green().bold()),
+        Print(" - IF FOUND update price and count ELSE add as a new item/box\r\n"),
+        PrintStyledContent("F".dark_green().bold()),
+        Print(" - list matching products\r\n"),
+        PrintStyledContent("I".dark_green().bold()),
+        Print(" - update all item/box properties\r\n"),
+        PrintStyledContent("S".dark_green().bold()),
+        Print(" - Search for an username\r\n"),
+        PrintStyledContent("P".dark_green().bold()),
+        Print(" - change password of an user\r\n"),
+        PrintStyledContent("E".dark_green().bold()),
+        Print(" - generate temppasword and send it to user\r\n"),
+        PrintStyledContent("C".dark_green().bold()),
+        Print(" - clear terminal\r\n"),
+        PrintStyledContent("<enter>".dark_green().bold()),
+        Print(" - exit management mode\r\n"),
+    )
+    .unwrap();
+}
+
+fn print_management_loop_banner(terminal_io: &mut TerminalIO, logo: bool) {
+    if logo {
+        clear_terminal(terminal_io);
+    }
+    
+    print_management_loop_instructions(terminal_io);
+    
+    if logo {
+        utils::print_rv_logo(terminal_io);
+    }
+    printline(terminal_io, "");
+}
+
 pub fn management_mode_loop(
     terminal_io: &mut TerminalIO,
     credentials: &rv_api::AuthenticationResponse,
 ) -> TimeoutResult<()> {
-    clear_terminal(terminal_io);
+    let mut logo: bool = true;
     'main: loop {
+        print_management_loop_banner(terminal_io, logo);
+        logo = false;
         let user_info = rv_api::get_user_info(&credentials).unwrap();
-
-        queue!(
-            terminal_io.writer,
-            cursor::MoveTo(0, terminal::size()?.1),
-            Print("=== management mode ===\r\n"),
-            PrintStyledContent("<barcode>".dark_green().bold()),
-            Print(" - IF FOUND update price and count ELSE add as a new item/box\r\n"),
-            PrintStyledContent("F".dark_green().bold()),
-            Print(" - list matching products\r\n"),
-            PrintStyledContent("I".dark_green().bold()),
-            Print(" - update all item/box properties\r\n"),
-            PrintStyledContent("S".dark_green().bold()),
-            Print(" - Search for an username\r\n"),
-            PrintStyledContent("P".dark_green().bold()),
-            Print(" - change password of an user\r\n"),
-            PrintStyledContent("E".dark_green().bold()),
-            Print(" - generate temppasword and send it to user\r\n"),
-            PrintStyledContent("<enter>".dark_green().bold()),
-            Print(" - exit management mode\r\n"),
-        )
-        .unwrap();
-
         execute!(
             terminal_io.writer,
             Print(&format!(
-                "\nDear {}, your saldo is {} > ",
+                "Dear {}, your saldo is {} > ",
                 user_info.username,
                 utils::format_money(&user_info.money_balance)
             ))
@@ -1155,7 +1175,7 @@ pub fn management_mode_loop(
                             break;
                         }
                         'i' => {
-                            printline(terminal_io, "");
+                            printline(terminal_io, "\n");
                             match change_item_properties(terminal_io, &credentials) {
                                 TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
                                 TimeoutResult::RESULT(_) => (),
@@ -1164,7 +1184,7 @@ pub fn management_mode_loop(
                             break;
                         }
                         's' => {
-                            printline(terminal_io, "");
+                            printline(terminal_io, "\n");
                             match search_for_user(INPUT_TIMEOUT_LONG, terminal_io, &credentials) {
                                 TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
                                 TimeoutResult::RESULT(_) => (),
@@ -1186,7 +1206,7 @@ pub fn management_mode_loop(
                             break;
                         }
                         'e' => {
-                            printline(terminal_io, "");
+                            printline(terminal_io, "\n");
                             match generate_temp_password_admin(
                                 INPUT_TIMEOUT_LONG,
                                 terminal_io,
@@ -1199,7 +1219,8 @@ pub fn management_mode_loop(
                             break;
                         }
                         'c' => {
-                            clear_terminal(terminal_io);
+                            logo = true;
+                            break;
                         }
                         '0'..='9' => {
                             terminal_io.writer.execute(Print(c)).unwrap();

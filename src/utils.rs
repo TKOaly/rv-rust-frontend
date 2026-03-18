@@ -208,7 +208,8 @@ pub fn confirm_with_default(
 pub fn clear_terminal(terminal_io: &mut TerminalIO) {
     execute!(
         terminal_io.writer,
-        terminal::Clear(terminal::ClearType::All)
+        terminal::Clear(terminal::ClearType::All),
+        cursor::MoveTo(0, terminal::size()?.1)
     )
     .unwrap()
 }
