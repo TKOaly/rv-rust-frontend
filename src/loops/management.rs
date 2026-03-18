@@ -614,7 +614,9 @@ fn change_item_properties(
     let product = match rv_api::get_product_info_admin(&credentials, &barcode).unwrap() {
         ApiResultValue::Success(product) => Some(product),
         ApiResultValue::Fail(msg) => {
-            utils::print_error_line(terminal_io, &msg);
+            if !msg.contains("Product not found") {
+                utils::print_error_line(terminal_io, &msg);
+            }
             None
         }
     };
@@ -622,7 +624,7 @@ fn change_item_properties(
         return change_product_properties(&barcode, terminal_io, credentials);
     }
     if let Some(b) = rv_api::get_box_info_admin(&barcode, credentials).unwrap() {
-        return change_box_properties(b.product.barcode, terminal_io, credentials);
+        return change_box_properties(b.box_barcode, terminal_io, credentials);
     }
     utils::print_error_line(terminal_io, "No matching box or product found!");
     TimeoutResult::RESULT(())
