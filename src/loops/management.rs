@@ -13,7 +13,6 @@ use crate::utils::clear_terminal;
 use crate::utils::print_error_line;
 use crate::utils::print_title;
 use crate::utils::printline;
-use crate::utils::readline;
 use crate::utils::readline_barcode;
 use crate::utils::TimeoutResult;
 use crate::TerminalIO;
@@ -725,7 +724,7 @@ fn generate_temp_password_admin(
         rv_api::ApiResult::Success => {
             utils::printline(
                 terminal_io,
-                &format!("Temperary password successfully for {}.", user.username),
+                &format!("Temporary password successfully for {}.", user.username),
             );
         }
         rv_api::ApiResult::Fail(msg) => {
@@ -969,9 +968,9 @@ pub fn management_mode_loop(
                     _ => (),
                 },
                 Ok(InputEvent::Barcode(barcode)) => {
-                    let trimend_barcode = barcode.trim();
-                    if Regex::new("^[0-9]+$").expect("").is_match(trimend_barcode) {
-                        match process_barcode_admin(trimend_barcode, terminal_io, credentials) {
+                    let trimmed_barcode = barcode.trim();
+                    if Regex::new("^[0-9]+$").expect("").is_match(trimmed_barcode) {
+                        match process_barcode_admin(trimmed_barcode, terminal_io, credentials) {
                             TimeoutResult::RESULT(_) => (),
                             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
                         }

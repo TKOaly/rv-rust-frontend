@@ -213,7 +213,7 @@ fn set_valid_email(
                 if e == "Email taken" {
                     utils::printline(
                         terminal_io,
-                        "Email is allredy in system. Use another email adres",
+                        "Email is already in system. Use another email address",
                     );
                 } else {
                     utils::printline(
