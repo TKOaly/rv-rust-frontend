@@ -8,7 +8,6 @@ use crate::rv_api::get_user_info;
 use crate::rv_api::return_product;
 use crate::rv_api::ApiResultPurchaseItem;
 use crate::rv_api::ApiResultPurchaseItemFailType;
-use crate::rv_api::ApiResultValue;
 use crate::rv_api::UserInfoTrait;
 use crate::utils;
 use crate::utils::load_ascii;
@@ -21,6 +20,7 @@ use crate::utils::TimeoutResult;
 use crate::TerminalIO;
 use crate::INPUT_TIMEOUT_LONG;
 use crate::INPUT_TIMEOUT_SHORT;
+use crate::utils::readline_barcode;
 
 use chrono::{DateTime, Local};
 use crossterm::{
@@ -43,283 +43,6 @@ static PURCHASE_FAILED_MSG1: LazyLock<String> = load_ascii!("../../ascii/purchas
 static PURCHASE_FAILED_MSG2: LazyLock<String> = load_ascii!("../../ascii/purchase_failed2.txt");
 static COFFEE_MSG: LazyLock<String> = load_ascii!("../../ascii/netlight.txt");
 
-pub fn buy_in_box(
-    barcode: &str,
-    terminal_io: &mut TerminalIO,
-    credentials: &rv_api::AuthenticationResponse,
-) -> TimeoutResult<()> {
-    let box_ = match rv_api::get_box_info_admin(barcode, credentials).unwrap() {
-        Some(b) => b,
-        None => {
-            print_error_line(
-                terminal_io,
-                &format!("Buy in error: No box found with barcode {}", barcode),
-            );
-            return TimeoutResult::RESULT(());
-        }
-    };
-    utils::printline(
-        terminal_io,
-        &format!(
-            "Found a box containing {}x of {}",
-            box_.items_per_box, box_.product.name
-        ),
-    );
-
-    utils::printline(terminal_io, "Adding new box to stock.");
-    let mut buy_price = box_.product.buy_price;
-    let mut buy_price_changed = false;
-
-    utils::printline(
-        terminal_io,
-        &format!(
-            "Current item buyprice: {} x {} = {}",
-            &utils::format_money(&buy_price),
-            box_.items_per_box,
-            &utils::format_money(&(box_.items_per_box * buy_price))
-        ),
-    );
-    loop {
-        utils::printline(
-            terminal_io,
-            "Enter box buyprice. Format: [0-9]+\\.[0-9][0-9]",
-        );
-        utils::printline(terminal_io, "At least one number, followed by period, followed by two numbers. For example: '1.00', '0.01', '14.42'");
-
-        let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
-            TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
-            TimeoutResult::RESULT(s) => s,
-        };
-        if input_line.len() == 0 {
-            printline(terminal_io, "Nothing changed.");
-            break;
-        } else if Regex::new("^[0-9]+\\.[0-9][0-9]$")
-            .expect("")
-            .is_match(&input_line)
-        {
-            let box_buy_price = input_line.replace(".", "").parse::<i32>().unwrap();
-            buy_price = (box_buy_price as f64 / box_.items_per_box as f64).ceil() as i32;
-            buy_price_changed = true;
-
-            utils::printline(
-                terminal_io,
-                &format!(
-                    "Calculated new item buyprice: {}",
-                    &utils::format_money(&buy_price)
-                ),
-            );
-            break;
-        } else {
-            print_error_line(terminal_io, "Invalid price entered, please retry!\n");
-        }
-    }
-    printline(terminal_io, "");
-
-    let mut sell_price = box_.product.sell_price;
-    loop {
-        utils::printline(terminal_io, "\r\nEnter item sellprice.");
-        if buy_price_changed {
-            let margin = rv_api::get_margin(&credentials).unwrap() as f64;
-            let margin_pretty = format!("{}%", (margin * 100.0).ceil());
-            sell_price = (buy_price as f64 * (1.0 + margin)).ceil() as i32;
-            utils::printline(
-                terminal_io,
-                &format!(
-                    "Suggest {} calculated with the margin of {}",
-                    &utils::format_money(&sell_price),
-                    margin_pretty
-                ),
-            );
-        }
-        utils::printline(
-            terminal_io,
-            &format!("Modify or keep [{}]:", &utils::format_money(&sell_price)),
-        );
-        let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
-            TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
-            TimeoutResult::RESULT(s) => s,
-        };
-        if input_line.len() == 0 {
-            if buy_price_changed {
-                printline(terminal_io, "Using the suggested price.");
-            } else {
-                printline(terminal_io, "Nothing changed.");
-            }
-            break;
-        } else if Regex::new("^[0-9]+\\.[0-9][0-9]$")
-            .expect("")
-            .is_match(&input_line)
-        {
-            sell_price = input_line.replace(".", "").parse().unwrap();
-            break;
-        } else {
-            print_error_line(terminal_io, "Invalid price entered, please retry!\n");
-        }
-    }
-    printline(terminal_io, "");
-    let box_count = loop {
-        utils::printline(terminal_io, "Enter how many boxes to add. Format: [0-9]+");
-        utils::printline(terminal_io, &format!("Modify or keep [0]:"));
-        let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
-            TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
-            TimeoutResult::RESULT(s) => s,
-        };
-        if input_line.len() == 0 {
-            break 0;
-        } else if Regex::new("^[0-9]+").expect("").is_match(&input_line) {
-            break input_line.parse().unwrap();
-        } else {
-            print_error_line(terminal_io, "Invalid stock entered, please retry!\n");
-        }
-    };
-    printline(terminal_io, "");
-    if box_count == 0 {
-        printline(terminal_io, "Added 0 boxes.");
-        return TimeoutResult::RESULT(());
-    }
-
-    match rv_api::buy_in_box(barcode, buy_price, sell_price, box_count, credentials).unwrap() {
-        ApiResult::Success => utils::printline(
-            terminal_io,
-            &format!(
-                "Added {} boxes. Total of {} items.",
-                box_count,
-                box_.items_per_box * box_count
-            ),
-        ),
-        ApiResult::Fail(msg) => print_error_line(terminal_io, &msg),
-    }
-
-    TimeoutResult::RESULT(())
-}
-
-pub fn buy_in_product(
-    barcode: &str,
-    terminal_io: &mut TerminalIO,
-    credentials: &rv_api::AuthenticationResponse,
-) -> TimeoutResult<()> {
-    let product;
-    match rv_api::get_product_info_admin(&credentials, barcode).unwrap() {
-        ApiResultValue::Success(suc) => product = suc,
-        ApiResultValue::Fail(msg) => {
-            utils::print_error_line(terminal_io, &msg);
-            return TimeoutResult::RESULT(());
-        }
-    };
-    utils::printline(terminal_io, &format!("Adding new products to stock."));
-    let mut buy_price = product.buy_price;
-    let mut buy_price_changed = false;
-    loop {
-        utils::printline(
-            terminal_io,
-            "Enter item buyprice. Format: [0-9]+\\.[0-9][0-9]",
-        );
-        utils::printline(terminal_io, "At least one number, followed by period, followed by two numbers. For example: '1.00', '0.01', '14.42'");
-        utils::printline(
-            terminal_io,
-            &format!("Modify or keep [{}]:", &utils::format_money(&buy_price)),
-        );
-        let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
-            TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
-            TimeoutResult::RESULT(s) => s,
-        };
-        if input_line.len() == 0 {
-            printline(terminal_io, "Nothing changed.");
-            break;
-        } else if Regex::new("^[0-9]+\\.[0-9][0-9]$")
-            .expect("")
-            .is_match(&input_line)
-        {
-            buy_price = input_line.replace(".", "").parse().unwrap();
-            buy_price_changed = true;
-            break;
-        } else {
-            print_error_line(terminal_io, "Invalid price entered, please retry!\n");
-        }
-    }
-    printline(terminal_io, "");
-
-    let mut sell_price = product.sell_price;
-    loop {
-        utils::printline(terminal_io, "\r\nEnter item sellprice.");
-        if buy_price_changed {
-            let margin = rv_api::get_margin(&credentials).unwrap() as f64;
-            let margin_pretty = format!("{}%", (margin * 100.0).ceil());
-            sell_price = (buy_price as f64 * (1.0 + margin)).ceil() as i32;
-            utils::printline(
-                terminal_io,
-                &format!(
-                    "Suggest {} calculated with the margin of {}",
-                    &utils::format_money(&sell_price),
-                    margin_pretty
-                ),
-            );
-            utils::printline(
-                terminal_io,
-                &format!("Modify or keep [{}]:", &utils::format_money(&sell_price)),
-            );
-        } else {
-            utils::printline(
-                terminal_io,
-                &format!("Modify or keep [{}]:", &utils::format_money(&sell_price)),
-            );
-        }
-        let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
-            TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
-            TimeoutResult::RESULT(s) => s,
-        };
-        if input_line.len() == 0 {
-            if buy_price_changed {
-                printline(terminal_io, "Using the suggested price.");
-            } else {
-                printline(terminal_io, "Nothing changed.");
-            }
-            break;
-        } else if Regex::new("^[0-9]+\\.[0-9][0-9]$")
-            .expect("")
-            .is_match(&input_line)
-        {
-            sell_price = input_line.replace(".", "").parse().unwrap();
-            break;
-        } else {
-            print_error_line(terminal_io, "Invalid price entered, please retry!\n");
-        }
-    }
-    printline(terminal_io, "");
-    let count = loop {
-        utils::printline(
-            terminal_io,
-            "How many products to add? Format: [0-9]+ or [0-9]+\\*[0-9]+",
-        );
-        let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
-            TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
-            TimeoutResult::RESULT(s) => s,
-        };
-
-        if input_line.len() == 0 {
-            break 0;
-        }
-
-        match utils::calculator_input(&input_line) {
-            Some(count) => {
-                break count;
-            }
-            None => {
-                print_error_line(terminal_io, "Invalid count entered, please retry!\n");
-            }
-        }
-    };
-    printline(terminal_io, "");
-    if count == 0 {
-        printline(terminal_io, "Added 0 products to stock.");
-        return TimeoutResult::RESULT(());
-    }
-
-    rv_api::buy_in_product(barcode, buy_price, sell_price, count, credentials);
-    utils::printline(terminal_io, &format!("Added {} products to stock.", count));
-    TimeoutResult::RESULT(())
-}
-
 fn return_purchase(
     terminal_io: &mut TerminalIO,
     credentials: &rv_api::AuthenticationResponse,
@@ -327,7 +50,7 @@ fn return_purchase(
     utils::print_title(terminal_io, "Return recent purchase");
 
     utils::printline(terminal_io, "Enter product barcode:");
-    let barcode = match readline(terminal_io, INPUT_TIMEOUT_SHORT) {
+    let barcode = match readline_barcode(terminal_io, INPUT_TIMEOUT_SHORT) {
         TimeoutResult::RESULT(s) => {
             if Regex::new("^[0-9]+$").unwrap().is_match(&s) {
                 s
@@ -361,7 +84,7 @@ fn multibuy(
     print_title(terminal_io, "Multibuy");
 
     utils::printline(terminal_io, "Enter item barcode:");
-    let barcode = match readline(terminal_io, INPUT_TIMEOUT_LONG) {
+    let barcode = match readline_barcode(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::RESULT(s) => {
             if Regex::new("^[0-9]+$").unwrap().is_match(&s) {
                 s
@@ -452,7 +175,7 @@ pub fn search_products(
 ) -> TimeoutResult<()> {
     print_title(terminal_io, "Product search");
     printline(terminal_io, "Enter name or barcode");
-    let query = match readline(terminal_io, INPUT_TIMEOUT_SHORT) {
+    let query = match readline_barcode(terminal_io, INPUT_TIMEOUT_SHORT) {
         TimeoutResult::RESULT(s) => s,
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
     };
@@ -867,8 +590,8 @@ pub fn user_loop(terminal_io: &mut TerminalIO, credentials: &rv_api::Authenticat
                     _ => (),
                 },
                 Ok(InputEvent::Barcode(barcode)) => {
-                    let trimed_barcode = barcode.trim();
-                    if Regex::new("^[0-9]+$").expect("").is_match(trimed_barcode) {
+                    let trimmed_barcode = barcode.trim();
+                    if Regex::new("^[0-9]+$").expect("").is_match(trimmed_barcode) {
                         purchase_items(&command, 1, terminal_io, credentials);
                         printline(terminal_io, "");
                         break;
