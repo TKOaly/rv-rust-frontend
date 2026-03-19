@@ -1040,8 +1040,7 @@ fn search_for_user(
     let mut users: Vec<UserInfo> = Vec::new();
     if input.is_empty() {
         return TimeoutResult::RESULT(());
-    }
-    else if input.split("@").count() == 2 {
+    } else if input.split("@").count() == 2 {
         let user = match rv_api::get_user_info_by_email(credentials, &input).unwrap() {
             ApiResultValue::Fail(msg) => {
                 print_error_line(terminal_io, &msg);
@@ -1133,9 +1132,9 @@ fn print_management_loop_banner(terminal_io: &mut TerminalIO, logo: bool) {
     if logo {
         clear_terminal(terminal_io);
     }
-    
+
     print_management_loop_instructions(terminal_io);
-    
+
     if logo {
         utils::print_rv_logo(terminal_io);
     }

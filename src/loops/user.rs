@@ -10,7 +10,6 @@ use crate::rv_api::ApiResultPurchaseItem;
 use crate::rv_api::ApiResultPurchaseItemFailType;
 use crate::rv_api::UserInfoTrait;
 use crate::utils;
-use crate::utils::clear_terminal;
 use crate::utils::load_ascii;
 use crate::utils::print_error_line;
 use crate::utils::print_title;

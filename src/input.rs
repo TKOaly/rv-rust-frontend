@@ -1,6 +1,6 @@
 use crossterm::{
     self,
-    event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers},
+    event::{self, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers},
 };
 use evdev::{self, InputEventKind};
 use rusb::{Context, UsbContext};
@@ -27,6 +27,7 @@ const BARCODE1_PRODUCT: u16 = 0x0197;
 const BARCODE2_VENDOR: u16 = 0x04d9;
 const BARCODE2_PRODUCT: u16 = 0x1400;
 
+#[derive(Debug)]
 pub enum InputEvent {
     Rfid(String),
     Barcode(String),
@@ -259,6 +260,10 @@ fn deserialize_software_input_event(line: &str) -> Result<InputEvent, String> {
     match event {
         "Barcode" => Ok(InputEvent::Barcode(string.to_string())),
         "RFID" => Ok(InputEvent::Rfid(string.to_string())),
+        "Keyboard" => match deserialize_software_keyboard_input_event(string) {
+            Some(event) => Ok(event),
+            None => Err(format!("unknown keyboard event: {}", string)),
+        },
         other => Err(format!("unknown event: {}", other)),
     }
 }

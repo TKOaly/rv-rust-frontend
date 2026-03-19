@@ -1,4 +1,4 @@
-use crate::{input::InputEvent, TerminalIO, INPUT_TIMEOUT_SHORT};
+use crate::{input::InputEvent, TerminalIO, INPUT_TIMEOUT_SHORT, NO_FONT_CHANGE};
 
 use super::input;
 use crossterm::{
@@ -67,33 +67,38 @@ mod tests {
 }
 
 pub fn set_small_font() {
-    let output = Command::new("setfont")
-        .arg("Uni2-VGA16.psf.gz")
-        .arg("-C")
-        .arg("/dev/tty1")
-        .output()
-        .unwrap();
-    if !ExitStatus::success(&output.status) {
-        eprintln!(
-            "Setfont exit code {}\n stderr: {}",
-            output.status,
-            &str::from_utf8(&output.stderr).unwrap()
-        );
+    if !*NO_FONT_CHANGE {
+        let output = Command::new("setfont")
+            .arg("Uni2-VGA16.psf.gz")
+            .arg("-C")
+            .arg("/dev/tty1")
+            .output()
+            .unwrap();
+        if !ExitStatus::success(&output.status) {
+            eprintln!(
+                "Setfont exit code {}\n stderr: {}",
+                output.status,
+                &str::from_utf8(&output.stderr).unwrap()
+            );
+        }
     }
 }
+
 pub fn set_big_font() {
-    let output = Command::new("setfont")
-        .arg("Uni2-VGA28x16.psf.gz")
-        .arg("-C")
-        .arg("/dev/tty1")
-        .output()
-        .unwrap();
-    if !ExitStatus::success(&output.status) {
-        eprintln!(
-            "Setfont exit code {}\n stderr: {}",
-            output.status,
-            &str::from_utf8(&output.stderr).unwrap()
-        );
+    if !*NO_FONT_CHANGE {
+        let output = Command::new("setfont")
+            .arg("Uni2-VGA28x16.psf.gz")
+            .arg("-C")
+            .arg("/dev/tty1")
+            .output()
+            .unwrap();
+        if !ExitStatus::success(&output.status) {
+            eprintln!(
+                "Setfont exit code {}\n stderr: {}",
+                output.status,
+                &str::from_utf8(&output.stderr).unwrap()
+            );
+        }
     }
 }
 

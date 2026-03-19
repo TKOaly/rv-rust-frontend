@@ -19,6 +19,8 @@ pub const INPUT_TIMEOUT_LONG: Duration = Duration::from_secs(5 * 60);
 
 pub static DEVELOPMENT_MODE: LazyLock<bool> =
     LazyLock::new(|| std::env::var("DEVELOPMENT").is_ok());
+pub static NO_FONT_CHANGE: LazyLock<bool> =
+    LazyLock::new(|| std::env::var("NO_FONT_CHANGE").is_ok());
 
 pub struct TerminalWriter {
     stdout: Stdout,

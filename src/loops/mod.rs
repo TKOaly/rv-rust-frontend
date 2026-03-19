@@ -16,7 +16,6 @@ use crossterm::{
     event::{Event, KeyCode},
     execute, queue,
     style::Print,
-    terminal,
 };
 
 use rv_api::{login_rfid, ApiResult, ApiResultValue};
