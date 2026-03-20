@@ -277,19 +277,24 @@ fn software_input(sender: Sender<InputEvent>) {
         let listener = UnixListener::bind(socket_path).expect("Failed to bind");
 
         for stream in listener.incoming() {
-            let stream = stream.unwrap();
-            let reader = BufReader::new(stream);
-            let sender = sender.clone();
-
-            thread::spawn(move || {
-                for line in reader.lines() {
-                    if let Ok(line) = line {
-                        if let Ok(event) = deserialize_software_input_event(&line) {
-                            sender.send(event).unwrap();
+            match stream {
+                Ok(stream) => {
+                    let sender = sender.clone();
+                    thread::spawn(move || {
+                        let reader = BufReader::new(stream);
+                        for line in reader.lines() {
+                            if let Ok(line) = line {
+                                if let Ok(event) = deserialize_software_input_event(&line) {
+                                    sender.send(event).unwrap();
+                                }
+                            }
                         }
-                    }
+                    });
                 }
-            });
+                Err(_) => {
+                    break;
+                }
+            }
         }
     });
 }
