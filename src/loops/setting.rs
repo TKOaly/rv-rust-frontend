@@ -25,7 +25,7 @@ fn change_username(
     terminal_io: &mut TerminalIO,
     credentials: &rv_api::AuthenticationResponse,
 ) -> TimeoutResult<()> {
-    print_title(terminal_io, "Change your username:");
+    print_title(terminal_io, "Change your username: ");
     execute!(terminal_io.writer, Print("New username: ")).unwrap();
     let username = match utils::readline(terminal_io, timeout) {
         TimeoutResult::TIMEOUT => {
@@ -51,7 +51,7 @@ fn change_real_name(
     terminal_io: &mut TerminalIO,
     credentials: &rv_api::AuthenticationResponse,
 ) -> TimeoutResult<()> {
-    print_title(terminal_io, "Change your FULL name:");
+    print_title(terminal_io, "Change your FULL name: ");
     execute!(terminal_io.writer, Print("Your FULL name: ")).unwrap();
     let full_name = match utils::readline(terminal_io, timeout) {
         TimeoutResult::TIMEOUT => {

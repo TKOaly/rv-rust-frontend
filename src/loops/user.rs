@@ -49,7 +49,7 @@ fn return_purchase(
 ) -> TimeoutResult<()> {
     utils::print_title(terminal_io, "Return recent purchase");
 
-    utils::printline(terminal_io, "Enter product barcode:");
+    utils::printline(terminal_io, "Enter product barcode: ");
     let barcode = match readline_barcode(terminal_io, INPUT_TIMEOUT_SHORT) {
         TimeoutResult::RESULT(s) => {
             if Regex::new("^[0-9]+$").unwrap().is_match(&s) {
@@ -83,7 +83,7 @@ fn multibuy(
 ) -> TimeoutResult<()> {
     print_title(terminal_io, "Multibuy");
 
-    utils::printline(terminal_io, "Enter item barcode:");
+    utils::printline(terminal_io, "Enter item barcode: ");
     let barcode = match readline_barcode(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::RESULT(s) => {
             if Regex::new("^[0-9]+$").unwrap().is_match(&s) {
@@ -97,7 +97,7 @@ fn multibuy(
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
     };
 
-    utils::printline(terminal_io, "Enter item count to buy:");
+    utils::printline(terminal_io, "Enter item count to buy: ");
     let count: i32 = match readline(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::RESULT(s) => {
             if Regex::new("^[1-9][0-9]*$").unwrap().is_match(&s) {
@@ -192,7 +192,7 @@ pub fn search_products(
         );
         return TimeoutResult::RESULT(());
     }
-    printline(terminal_io, "\r\nResult products:");
+    printline(terminal_io, "\r\nResult products: ");
     let mut dupehack: Vec<String> = Vec::new();
     for product in product_results {
         dupehack.push(format!(
@@ -218,7 +218,7 @@ pub fn search_products(
         printline(terminal_io, &line);
     }
     if user_info.is_admin() {
-        printline(terminal_io, "\r\nResult boxes:");
+        printline(terminal_io, "\r\nResult boxes: ");
         for box_result in box_results {
             utils::printline(
                 terminal_io,

@@ -121,7 +121,7 @@ fn buy_in_box(
         }
         utils::printline(
             terminal_io,
-            &format!("Modify or keep [{}]:", &utils::format_money(&sell_price)),
+            &format!("Modify or keep [{}]: ", &utils::format_money(&sell_price)),
         );
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
@@ -147,7 +147,7 @@ fn buy_in_box(
     printline(terminal_io, "");
     let box_count = loop {
         utils::printline(terminal_io, "Enter how many boxes to add. Format: [0-9]+");
-        utils::printline(terminal_io, &format!("Modify or keep [0]:"));
+        utils::printline(terminal_io, &format!("Modify or keep [0]: "));
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
             TimeoutResult::RESULT(s) => s,
@@ -205,7 +205,7 @@ fn buy_in_product(
         utils::printline(terminal_io, "At least one number, followed by period, followed by two numbers. For example: '1.00', '0.01', '14.42'");
         utils::printline(
             terminal_io,
-            &format!("Modify or keep [{}]:", &utils::format_money(&buy_price)),
+            &format!("Modify or keep [{}]: ", &utils::format_money(&buy_price)),
         );
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
@@ -244,12 +244,12 @@ fn buy_in_product(
             );
             utils::printline(
                 terminal_io,
-                &format!("Modify or keep [{}]:", &utils::format_money(&sell_price)),
+                &format!("Modify or keep [{}]: ", &utils::format_money(&sell_price)),
             );
         } else {
             utils::printline(
                 terminal_io,
-                &format!("Modify or keep [{}]:", &utils::format_money(&sell_price)),
+                &format!("Modify or keep [{}]: ", &utils::format_money(&sell_price)),
             );
         }
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
@@ -318,7 +318,7 @@ fn new_product(
         terminal_io,
         &format!("Creating a new product. Enter to cancel."),
     );
-    utils::printline(terminal_io, &format!("Enter product name:"));
+    utils::printline(terminal_io, &format!("Enter product name: "));
 
     let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
@@ -377,7 +377,7 @@ fn new_product(
         utils::printline(
             terminal_io,
             &format!(
-                "Modify or keep [{}]:",
+                "Modify or keep [{}]: ",
                 &utils::format_money(&suggested_price)
             ),
         );
@@ -426,7 +426,7 @@ fn new_product(
 
     let category = loop {
         utils::printline(terminal_io, "Enter product category id.");
-        utils::printline(terminal_io, "Categories available:");
+        utils::printline(terminal_io, "Categories available: ");
         let categories = rv_api::get_categories(&credentials).unwrap();
         for category in categories.iter() {
             utils::printline(
@@ -597,7 +597,7 @@ fn change_item_properties(
     credentials: &rv_api::AuthenticationResponse,
 ) -> TimeoutResult<()> {
     print_title(terminal_io, "Change item properties");
-    utils::printline(terminal_io, "Enter barcode:");
+    utils::printline(terminal_io, "Enter barcode: ");
     let barcode = match readline_barcode(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::RESULT(s) => {
             if Regex::new("^[0-9]+$").unwrap().is_match(&s) {
@@ -647,7 +647,7 @@ fn change_box_properties(
         terminal_io,
         &format!("Current itembarcode: '{product_barcode}'"),
     );
-    printline(terminal_io, &format!("Modify or keep [{product_barcode}]:"));
+    printline(terminal_io, &format!("Modify or keep [{product_barcode}]: "));
     let input_line = match readline_barcode(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
         TimeoutResult::RESULT(s) => s,
@@ -686,7 +686,7 @@ fn change_box_properties(
         );
         printline(
             terminal_io,
-            &format!("Modify or keep [{items_per_box}] Format: [0-9]+:"),
+            &format!("Modify or keep [{items_per_box}] Format: [0-9]+: "),
         );
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
@@ -730,7 +730,7 @@ fn change_product_properties(
 
     let mut barcode = product.barcode;
     utils::printline(terminal_io, &format!("Current description: '{barcode}'"));
-    utils::printline(terminal_io, &format!("Modify or keep [{barcode}]:"));
+    utils::printline(terminal_io, &format!("Modify or keep [{barcode}]: "));
 
     let input_line = match utils::readline_barcode(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
@@ -745,7 +745,7 @@ fn change_product_properties(
 
     let mut name = product.name;
     utils::printline(terminal_io, &format!("Current description: '{name}'"));
-    utils::printline(terminal_io, &format!("Modify or keep [{name}]:"));
+    utils::printline(terminal_io, &format!("Modify or keep [{name}]: "));
 
     let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
@@ -769,7 +769,7 @@ fn change_product_properties(
         utils::printline(terminal_io, "At least one number, followed by period, followed by two numbers. For example: '1.00', '0.01', '14.42'");
         utils::printline(
             terminal_io,
-            &format!("Modify or keep [{}]:", &utils::format_money(&buy_price)),
+            &format!("Modify or keep [{}]: ", &utils::format_money(&buy_price)),
         );
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
@@ -809,7 +809,7 @@ fn change_product_properties(
         }
         utils::printline(
             terminal_io,
-            &format!("Modify or keep [{}]:", &utils::format_money(&sell_price)),
+            &format!("Modify or keep [{}]: ", &utils::format_money(&sell_price)),
         );
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
@@ -837,7 +837,7 @@ fn change_product_properties(
     loop {
         utils::printline(terminal_io, "Please enter item stock. Format: (+|-)?[0-9]+");
         utils::printline(terminal_io, "No prefix or - means to set stock to negative or positive number given. + prefix means to increment stock e.g. +5 when stock is 2 results in stock of 7.");
-        utils::printline(terminal_io, &format!("Modify or keep [{stock}]:"));
+        utils::printline(terminal_io, &format!("Modify or keep [{stock}]: "));
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
             TimeoutResult::RESULT(s) => s,
@@ -864,7 +864,7 @@ fn change_product_properties(
     let mut category = product.category;
     loop {
         utils::printline(terminal_io, "Please enter product category id.");
-        utils::printline(terminal_io, "Categories available:");
+        utils::printline(terminal_io, "Categories available: ");
         let categories = rv_api::get_categories(&credentials).unwrap();
         for category in categories.iter() {
             utils::printline(
@@ -874,7 +874,7 @@ fn change_product_properties(
         }
         utils::printline(
             terminal_io,
-            &format!("Modify or keep [{}]:", category.description),
+            &format!("Modify or keep [{}]: ", category.description),
         );
         let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,

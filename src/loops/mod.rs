@@ -71,7 +71,7 @@ fn register(username: &str, terminal_io: &mut TerminalIO) -> TimeoutResult<()> {
     execute!(
         terminal_io.writer,
         Print(&format!(
-            "\r\ncreating a new user: {username}\r\nenter password:"
+            "\r\nCreating a new user: {username}\r\nenter password: "
         ))
     )
     .unwrap();
@@ -85,7 +85,7 @@ fn register(username: &str, terminal_io: &mut TerminalIO) -> TimeoutResult<()> {
         TimeoutResult::RESULT(s) => s,
     };
 
-    execute!(terminal_io.writer, Print("\r\nenter password again:")).unwrap();
+    execute!(terminal_io.writer, Print("\r\nEnter password again: ")).unwrap();
     let password2 = match utils::readpasswd(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::TIMEOUT => {
             utils::printline(terminal_io, "Timed out!");
@@ -101,7 +101,7 @@ fn register(username: &str, terminal_io: &mut TerminalIO) -> TimeoutResult<()> {
         return TimeoutResult::RESULT(());
     }
 
-    execute!(terminal_io.writer, Print("\r\nEnter your FULL name:")).unwrap();
+    execute!(terminal_io.writer, Print("\r\nEnter your FULL name: ")).unwrap();
 
     let full_name = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::TIMEOUT => {
@@ -141,7 +141,7 @@ fn input_email(terminal_io: &mut TerminalIO, timeout: Duration) -> TimeoutResult
             return TimeoutResult::TIMEOUT;
         }
 
-        execute!(terminal_io.writer, Print("\r\nEnter your email address:")).unwrap();
+        execute!(terminal_io.writer, Print("\r\nEnter your email address: ")).unwrap();
 
         let email1 = match utils::readline(terminal_io, timeout) {
             TimeoutResult::TIMEOUT => {
@@ -152,7 +152,7 @@ fn input_email(terminal_io: &mut TerminalIO, timeout: Duration) -> TimeoutResult
 
         execute!(
             terminal_io.writer,
-            Print("\r\nEnter your email address again:")
+            Print("\r\nEnter your email address again: ")
         )
         .unwrap();
 
