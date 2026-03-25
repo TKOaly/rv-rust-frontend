@@ -6,12 +6,21 @@
 |_| \_\ \_/
 ```
 
-> **RV Machine — Terminal Frontend**  
-> A blazing-fast terminal interface for the RV machine, built with Rust 🦀
+# Ruokavälitys- frontend  
+
+A blazing-fast terminal interface for TKO-äly Ruokavälitys (Snack kiosk), built with Rust 
 
 ---
 
-## 📦 Deploying
+## Table Of Contents
+
+-   [Deploying](#Deploying)
+-   [Development](#Development)
+-   [Automated Testing](#Automated-testing)
+-   [Project structure](#Project structure)
+
+
+## Deploying
 
 Build the Docker image and run it:
 
@@ -22,10 +31,9 @@ docker run rv-terminal
 
 ---
 
-## 🛠 Development
+## Development
 
-### Setup
-
+### Running
 **1.** Start the [`rv-backend`](https://github.com/TKOaly/rv-backend)
 
 **2.** Set the development environment variable:
@@ -40,38 +48,32 @@ export DEVELOPMENT=true
 cargo run
 ```
 
-> 💡 To exit the program, type `quit` on the login screen.
+To exit the program, type `quit` on the login screen.
 
 ---
 
-## 🧪 Automated Testing
+## Automated testing
 
-Start the project in development mode, then launch the test suite:
+See running in rv-rust-frontend-test (private) 
 
-```bash
-# Terminal 1 — start rv-terminal in dev mode
-# Terminal 2 — run test suite
-```
 
----
-
-## 🗂 Project Structure
+## Project structure
 
 ```
 rv-tui/
 ├── .github/
-├── ascii/                  # ASCII art assets
+├── ascii/
 ├── src/
 │   ├── loops/
-│   │   ├── management.rs   # Admin loop
-│   │   ├── mod.rs          # Main loop
-│   │   ├── setting.rs      # Settings loop
-│   │   └── user.rs         # User loop
-│   ├── input.rs            # Input handling
+│   │   ├── management.rs
+│   │   ├── mod.rs
+│   │   ├── setting.rs
+│   │   └── user.rs
+│   ├── input.rs
 │   ├── lib.rs
 │   ├── main.rs            
-│   ├── rv_api.rs           # RV backend API client
-│   └── utils.rs            # Shared utilities
+│   ├── rv_api.rs
+│   └── utils.rs
 ├── tests/                  # Basic test to check if rvterminal starts
 │   ├── common/
 │   │   └── mod.rs
@@ -80,7 +82,3 @@ rv-tui/
 ├── Cargo.toml
 └── README.md
 ```
-
----
-
-<p align="center">Built with 💛🖤 and Rust 🦀</p>

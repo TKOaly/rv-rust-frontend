@@ -1115,7 +1115,7 @@ fn print_management_loop_instructions(terminal_io: &mut TerminalIO) {
         PrintStyledContent("I".dark_green().bold()),
         Print(" - update all item/box properties\r\n"),
         PrintStyledContent("S".dark_green().bold()),
-        Print(" - Search for an username\r\n"),
+        Print(" - search for an username\r\n"),
         PrintStyledContent("P".dark_green().bold()),
         Print(" - change password of an user\r\n"),
         PrintStyledContent("E".dark_green().bold()),
