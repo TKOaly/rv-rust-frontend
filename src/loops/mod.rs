@@ -462,7 +462,7 @@ pub fn main_loop(terminal_io: &mut TerminalIO) -> io::Result<()> {
             }
         }
 
-        if user.full_name == "no name" {
+        if user.full_name.to_lowercase().contains("no name") {
             if let None = set_valid_full_name(terminal_io, &credentials) {
                 continue 'main;
             }
