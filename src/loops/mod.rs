@@ -194,6 +194,7 @@ fn set_valid_email(
     terminal_io: &mut TerminalIO,
     credentials: &rv_api::AuthenticationResponse,
 ) -> Option<()> {
+    utils::printline(terminal_io, "\n");
     utils::printline(
         terminal_io,
         "To continue using RV you need to provide valid email",
@@ -241,6 +242,7 @@ fn set_valid_full_name(
     terminal_io: &mut TerminalIO,
     credentials: &rv_api::AuthenticationResponse,
 ) -> Option<()> {
+    utils::printline(terminal_io, "\n");
     utils::printline(
         terminal_io,
         "To continue using RV you need to provide your FULL name",
@@ -262,7 +264,7 @@ fn set_valid_full_name(
         return None;
     }
 
-    match rv_api::change_username(credentials, &full_name) {
+    match rv_api::change_full_name(credentials, &full_name) {
         Ok(apiresult) => {
             if let ApiResult::Fail(_) = apiresult {
                 utils::printline(
