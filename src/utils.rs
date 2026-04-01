@@ -1,8 +1,8 @@
-use crate::{input::InputEvent, TerminalIO, INPUT_TIMEOUT_SHORT};
+use crate::{input::InputEvent, TerminalIO, INPUT_TIMEOUT_SHORT, NO_FONT_CHANGE};
 
 use super::input;
 use crossterm::{
-    cursor,
+    cursor::{self, RestorePosition, SavePosition},
     event::{Event, KeyCode, KeyEvent},
     execute,
     style::{Print, PrintStyledContent, Stylize},
@@ -15,7 +15,6 @@ pub enum TimeoutResult<T> {
 }
 
 use core::str;
-use regex::Regex;
 use std::{
     fs,
     process::{Command, ExitStatus},
@@ -68,33 +67,38 @@ mod tests {
 }
 
 pub fn set_small_font() {
-    let output = Command::new("setfont")
-        .arg("Uni2-VGA16.psf.gz")
-        .arg("-C")
-        .arg("/dev/tty1")
-        .output()
-        .unwrap();
-    if !ExitStatus::success(&output.status) {
-        eprintln!(
-            "Setfont exit code {}\n stderr: {}",
-            output.status,
-            &str::from_utf8(&output.stderr).unwrap()
-        );
+    if !*NO_FONT_CHANGE {
+        let output = Command::new("setfont")
+            .arg("Uni2-VGA16.psf.gz")
+            .arg("-C")
+            .arg("/dev/tty1")
+            .output()
+            .unwrap();
+        if !ExitStatus::success(&output.status) {
+            eprintln!(
+                "Setfont exit code {}\n stderr: {}",
+                output.status,
+                &str::from_utf8(&output.stderr).unwrap()
+            );
+        }
     }
 }
+
 pub fn set_big_font() {
-    let output = Command::new("setfont")
-        .arg("Uni2-VGA28x16.psf.gz")
-        .arg("-C")
-        .arg("/dev/tty1")
-        .output()
-        .unwrap();
-    if !ExitStatus::success(&output.status) {
-        eprintln!(
-            "Setfont exit code {}\n stderr: {}",
-            output.status,
-            &str::from_utf8(&output.stderr).unwrap()
-        );
+    if !*NO_FONT_CHANGE {
+        let output = Command::new("setfont")
+            .arg("Uni2-VGA28x16.psf.gz")
+            .arg("-C")
+            .arg("/dev/tty1")
+            .output()
+            .unwrap();
+        if !ExitStatus::success(&output.status) {
+            eprintln!(
+                "Setfont exit code {}\n stderr: {}",
+                output.status,
+                &str::from_utf8(&output.stderr).unwrap()
+            );
+        }
     }
 }
 
@@ -136,6 +140,17 @@ pub fn print_error_line(terminal_io: &mut TerminalIO, s: &str) {
         Print("\r\n")
     )
     .unwrap();
+}
+
+pub fn print_rv_logo(terminal_io: &mut TerminalIO) {
+    static RV_LOGO: LazyLock<String> = load_ascii!("../ascii/logo.txt");
+    execute!(
+        terminal_io.writer,
+        SavePosition,
+        cursor::MoveTo(0, 3),
+        PrintStyledContent(RV_LOGO.to_string().yellow()),
+        RestorePosition
+    );
 }
 
 pub fn readpasswd(terminal_io: &mut TerminalIO, timeout: Duration) -> TimeoutResult<String> {
@@ -198,7 +213,8 @@ pub fn confirm_with_default(
 pub fn clear_terminal(terminal_io: &mut TerminalIO) {
     execute!(
         terminal_io.writer,
-        terminal::Clear(terminal::ClearType::All)
+        terminal::Clear(terminal::ClearType::All),
+        cursor::MoveTo(0, terminal::size()?.1)
     )
     .unwrap()
 }
@@ -271,28 +287,47 @@ fn readline_internal(
     Ok(TimeoutResult::RESULT(ret.trim().to_string()))
 }
 
-pub fn calculator_input(input: &str) -> Option<i32> {
-    if input.is_empty() {
-        return None;
-    }
-
-    let caps = Regex::new("^(?<lhs>[0-9]+)(?:\\*(?<rhs>[0-9]+))?$")
-        .unwrap()
-        .captures(&input);
-
-    if let Some(caps) = caps {
-        let lhs = caps["lhs"].parse::<i32>().ok()?;
-
-        if caps.name("rhs").is_none() {
-            return Some(lhs);
+pub fn readline_barcode(terminal_io: &mut TerminalIO, timeout: Duration) -> TimeoutResult<String> {
+    let mut barcode = String::new();
+    loop {
+        match terminal_io.recv.recv_timeout(timeout) {
+            Err(RecvTimeoutError::Timeout) => {
+                printline(terminal_io, "");
+                return TimeoutResult::TIMEOUT;
+            }
+            Ok(input::InputEvent::Terminal(Event::Key(ev))) => match ev.code {
+                KeyCode::Char(c) => {
+                    if c.is_ascii_digit() {
+                        barcode.push(c);
+                        execute!(terminal_io.writer, Print(c)).unwrap();
+                    }
+                }
+                KeyCode::Backspace => {
+                    if !barcode.is_empty() {
+                        execute!(
+                            terminal_io.writer,
+                            cursor::MoveLeft(1),
+                            Print(" "),
+                            cursor::MoveLeft(1)
+                        )
+                        .unwrap();
+                        barcode.pop();
+                    }
+                }
+                KeyCode::Enter => {
+                    break;
+                }
+                _ => (),
+            },
+            Ok(input::InputEvent::Barcode(input)) => {
+                barcode = input;
+                break;
+            }
+            _ => (),
         }
-
-        let rhs = caps["rhs"].parse::<i32>().ok()?;
-
-        return Some(lhs * rhs);
     }
-
-    None
+    printline(terminal_io, "");
+    return TimeoutResult::RESULT(barcode.trim().to_string());
 }
 
 pub fn is_barcode(input: &str) -> bool {
@@ -334,4 +369,23 @@ pub fn is_barcode(input: &str) -> bool {
     let check_sum = (10 - (sum % 10)) % 10;
     println!("{}", check_sum);
     return check_sum == *code.last().unwrap();
+}
+
+pub fn calculator_input(input: &str) -> Option<i32> {
+    if input.is_empty() {
+        return None;
+    }
+
+    let numbers = input.split("*");
+    let mut product: Option<i32> = None;
+
+    for number in numbers {
+        let num1 = number.parse::<i32>().ok()?;
+        product = Some(match product {
+            Some(num2) => num2 * num1,
+            None => num1,
+        });
+    }
+
+    product
 }

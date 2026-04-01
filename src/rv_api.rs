@@ -13,6 +13,8 @@ static RV_TERMINAL_SECRET: LazyLock<String> =
 pub struct AuthenticationResponse {
     #[serde(rename = "accessToken")]
     access_token: String,
+    #[serde(rename = "passwordReset")]
+    pub password_reset: bool,
 }
 
 #[derive(Deserialize)]
@@ -134,7 +136,7 @@ pub fn add_product(
 pub fn login(username: &str, password: &str) -> ApiResultValue<AuthenticationResponse> {
     let client = reqwest::blocking::Client::new();
     let resp = client
-        .post(format!("{}/v1/authenticate", *API_URL))
+        .post(format!("{}/v2/authenticate", *API_URL))
         .json(&HashMap::from([
             ("username", &username),
             ("password", &password),
@@ -154,7 +156,7 @@ pub fn login(username: &str, password: &str) -> ApiResultValue<AuthenticationRes
 pub fn login_rfid(rfid: &str) -> Option<AuthenticationResponse> {
     let client = reqwest::blocking::Client::new();
     let resp = client
-        .post(format!("{}/v1/authenticate/rfid", *API_URL))
+        .post(format!("{}/v2/authenticate/rfid", *API_URL))
         .json(&HashMap::from([
             ("rfid", &rfid),
             ("rvTerminalSecret", &RV_TERMINAL_SECRET.as_str()),
@@ -183,7 +185,7 @@ pub struct UserInfo {
     pub money_balance: i32,
     pub role: String,
     #[serde(rename = "privacyLevel")]
-    pub privacy_level: u8
+    pub privacy_level: u8,
 }
 
 pub trait UserInfoTrait {
@@ -218,6 +220,7 @@ pub struct LeaderboardRow {
     pub saldo: i32,
     pub name: String,
 }
+
 pub fn get_leaderboard() -> Result<ApiResultValue<Vec<LeaderboardRow>>, reqwest::Error> {
     let client = reqwest::blocking::Client::new();
     let resp = client
@@ -280,6 +283,62 @@ pub fn get_user_info_by_username(
     Ok(match resp.status().as_u16() {
         200 => ApiResultValue::Success(resp.json::<Hax>().map(|v| v.user).unwrap()),
         404 => ApiResultValue::Fail("User with the given username not found".to_string()),
+        401 => ApiResultValue::Fail("Not authorized".to_string()),
+        code => ApiResultValue::Fail(format!("http response {code}")),
+    })
+}
+
+pub fn get_user_info_by_email(
+    credentials: &AuthenticationResponse,
+    email: &str,
+) -> Result<ApiResultValue<UserInfo>, reqwest::Error> {
+    #[derive(Deserialize)]
+    struct Hax {
+        user: UserInfo,
+    }
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .get(format!(
+            "{}/v1/admin/utils/getUserByEmail/{email}",
+            *API_URL
+        ))
+        .header(
+            "Authorization",
+            String::from("Bearer ") + &credentials.access_token,
+        )
+        .send()
+        .expect("api error");
+    Ok(match resp.status().as_u16() {
+        200 => ApiResultValue::Success(resp.json::<Hax>().map(|v| v.user).unwrap()),
+        404 => ApiResultValue::Fail("User with the given email not found".to_string()),
+        401 => ApiResultValue::Fail("Not authorized".to_string()),
+        code => ApiResultValue::Fail(format!("http response {code}")),
+    })
+}
+
+pub fn get_user_info_by_full_name(
+    credentials: &AuthenticationResponse,
+    full_name: &str,
+) -> Result<ApiResultValue<UserInfo>, reqwest::Error> {
+    #[derive(Deserialize)]
+    struct Hax {
+        user: UserInfo,
+    }
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .get(format!(
+            "{}/v1/admin/utils/getUserByFullName/{full_name}",
+            *API_URL
+        ))
+        .header(
+            "Authorization",
+            String::from("Bearer ") + &credentials.access_token,
+        )
+        .send()
+        .expect("api error");
+    Ok(match resp.status().as_u16() {
+        200 => ApiResultValue::Success(resp.json::<Hax>().map(|v| v.user).unwrap()),
+        404 => ApiResultValue::Fail("User with the given full name not found".to_string()),
         401 => ApiResultValue::Fail("Not authorized".to_string()),
         code => ApiResultValue::Fail(format!("http response {code}")),
     })
@@ -349,6 +408,34 @@ pub fn change_password_admin(
             String::from("Bearer ") + &credentials.access_token,
         )
         .json(&HashMap::from([("password", password)]))
+        .send()
+        .expect("api error");
+    match resp.status().as_u16() {
+        200 => Ok(ApiResult::Success),
+        404 => Ok(ApiResult::Fail(
+            "User with the given username not found".to_string(),
+        )),
+        400 => Ok(ApiResult::Fail(
+            "Missing or invalid fields in request".to_string(),
+        )),
+        401 => Ok(ApiResult::Fail("Not authorized".to_string())),
+        code => Ok(ApiResult::Fail(format!("http response {code}"))),
+    }
+}
+
+pub fn change_role_admin(
+    credentials: &AuthenticationResponse,
+    user_id: i32,
+    role: &str,
+) -> Result<ApiResult, reqwest::Error> {
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .post(format!("{}/v1/admin/users/{user_id}/changeRole", *API_URL))
+        .header(
+            "Authorization",
+            String::from("Bearer ") + &credentials.access_token,
+        )
+        .json(&HashMap::from([("role", role)]))
         .send()
         .expect("api error");
     match resp.status().as_u16() {
@@ -461,6 +548,30 @@ pub fn change_username(
     }
 }
 
+pub fn generate_temp_password(
+    credentials: &AuthenticationResponse,
+    user_id: i32,
+) -> Result<ApiResult, reqwest::Error> {
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .patch(format!("{}/v1/email/temp_password", *API_URL))
+        .header(
+            "Authorization",
+            String::from("Bearer ") + &credentials.access_token,
+        )
+        .json(&HashMap::from([("userId", user_id)]))
+        .send()
+        .expect("api error");
+    match resp.status().as_u16() {
+        201 => Ok(ApiResult::Success),
+        400 => Ok(ApiResult::Fail(
+            "Missing or invalid fields in request".to_string(),
+        )),
+        401 => Ok(ApiResult::Fail("Not authorized".to_string())),
+        code => Ok(ApiResult::Fail(format!("http response {code}"))),
+    }
+}
+
 pub fn change_full_name(
     credentials: &AuthenticationResponse,
     fullname: &str,
@@ -527,6 +638,7 @@ pub enum ApiResultPurchaseItem {
     Success,
     Fail(ApiResultPurchaseItemFail),
 }
+
 pub fn purchase_item(
     credentials: &AuthenticationResponse,
     barcode: &str,
