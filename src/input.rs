@@ -222,6 +222,14 @@ fn deserialize_software_keyboard_input_event(key: &str) -> Option<InputEvent> {
                 state: KeyEventState::NONE,
             },
         ))),
+        "Space" => Some(InputEvent::Terminal(crossterm::event::Event::Key(
+            KeyEvent {
+                code: KeyCode::Char(' '),
+                modifiers: KeyModifiers::NONE,
+                kind: KeyEventKind::Press,
+                state: KeyEventState::NONE,
+            },
+        ))),
         key => {
             if key.starts_with("Fn") {
                 let num = key.replace("Fn", "").parse::<u8>().ok()?;
