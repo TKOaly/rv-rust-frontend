@@ -8,13 +8,13 @@ edition = "2021"
 [dependencies]
 chrono = "0.4.38"
 chrono-tz = "0.10.0"
-crossterm = "0.28.1"
-evdev = "0.12.2"
+crossterm = "0.29.0"
+evdev = "0.13.2"
 regex = "1.10.6"
-reqwest = { version = "0.12.7", features = [
+reqwest = { version = "0.13.3", features = [
     "json",
     "blocking",
-    "rustls-tls",
+    "rustls",
 ], default-features = false }
 rusb = "0.9.4"
 serde = { version = "1.0.208", features = ["derive"] }

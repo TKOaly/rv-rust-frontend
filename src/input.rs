@@ -2,7 +2,7 @@ use crossterm::{
     self,
     event::{self, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers},
 };
-use evdev::{self, InputEventKind};
+use evdev::{self, EventSummary};
 use rusb::{Context, UsbContext};
 use std::{
     fs,
@@ -38,80 +38,80 @@ struct HotPlugHandler {
     chan: Sender<InputEvent>,
 }
 
-fn rfid_key_to_char(key: evdev::Key) -> Option<char> {
+fn rfid_key_to_char(key: evdev::KeyCode) -> Option<char> {
     match key {
-        evdev::Key::KEY_0 => Some('0'),
-        evdev::Key::KEY_1 => Some('1'),
-        evdev::Key::KEY_2 => Some('2'),
-        evdev::Key::KEY_3 => Some('3'),
-        evdev::Key::KEY_4 => Some('4'),
-        evdev::Key::KEY_5 => Some('5'),
-        evdev::Key::KEY_6 => Some('6'),
-        evdev::Key::KEY_7 => Some('7'),
-        evdev::Key::KEY_8 => Some('8'),
-        evdev::Key::KEY_9 => Some('9'),
-        evdev::Key::KEY_A => Some('a'),
-        evdev::Key::KEY_B => Some('b'),
-        evdev::Key::KEY_C => Some('c'),
-        evdev::Key::KEY_D => Some('d'),
-        evdev::Key::KEY_E => Some('e'),
-        evdev::Key::KEY_F => Some('f'),
+        evdev::KeyCode::KEY_0 => Some('0'),
+        evdev::KeyCode::KEY_1 => Some('1'),
+        evdev::KeyCode::KEY_2 => Some('2'),
+        evdev::KeyCode::KEY_3 => Some('3'),
+        evdev::KeyCode::KEY_4 => Some('4'),
+        evdev::KeyCode::KEY_5 => Some('5'),
+        evdev::KeyCode::KEY_6 => Some('6'),
+        evdev::KeyCode::KEY_7 => Some('7'),
+        evdev::KeyCode::KEY_8 => Some('8'),
+        evdev::KeyCode::KEY_9 => Some('9'),
+        evdev::KeyCode::KEY_A => Some('a'),
+        evdev::KeyCode::KEY_B => Some('b'),
+        evdev::KeyCode::KEY_C => Some('c'),
+        evdev::KeyCode::KEY_D => Some('d'),
+        evdev::KeyCode::KEY_E => Some('e'),
+        evdev::KeyCode::KEY_F => Some('f'),
         _ => None,
     }
 }
 
-fn barcode_key_to_char(key: evdev::Key) -> Option<char> {
+fn barcode_key_to_char(key: evdev::KeyCode) -> Option<char> {
     match key {
-        evdev::Key::KEY_0 => Some('0'),
-        evdev::Key::KEY_1 => Some('1'),
-        evdev::Key::KEY_2 => Some('2'),
-        evdev::Key::KEY_3 => Some('3'),
-        evdev::Key::KEY_4 => Some('4'),
-        evdev::Key::KEY_5 => Some('5'),
-        evdev::Key::KEY_6 => Some('6'),
-        evdev::Key::KEY_7 => Some('7'),
-        evdev::Key::KEY_8 => Some('8'),
-        evdev::Key::KEY_9 => Some('9'),
-        evdev::Key::KEY_A => Some('a'),
-        evdev::Key::KEY_B => Some('b'),
-        evdev::Key::KEY_C => Some('c'),
-        evdev::Key::KEY_D => Some('d'),
-        evdev::Key::KEY_E => Some('e'),
-        evdev::Key::KEY_F => Some('f'),
-        evdev::Key::KEY_G => Some('g'),
-        evdev::Key::KEY_H => Some('h'),
-        evdev::Key::KEY_I => Some('i'),
-        evdev::Key::KEY_J => Some('j'),
-        evdev::Key::KEY_K => Some('k'),
-        evdev::Key::KEY_L => Some('l'),
-        evdev::Key::KEY_M => Some('m'),
-        evdev::Key::KEY_N => Some('n'),
-        evdev::Key::KEY_O => Some('o'),
-        evdev::Key::KEY_P => Some('p'),
-        evdev::Key::KEY_Q => Some('q'),
-        evdev::Key::KEY_R => Some('r'),
-        evdev::Key::KEY_S => Some('s'),
-        evdev::Key::KEY_T => Some('t'),
-        evdev::Key::KEY_U => Some('u'),
-        evdev::Key::KEY_V => Some('v'),
-        evdev::Key::KEY_W => Some('w'),
-        evdev::Key::KEY_X => Some('x'),
-        evdev::Key::KEY_Y => Some('y'),
-        evdev::Key::KEY_Z => Some('z'),
-        evdev::Key::KEY_SLASH => Some('/'),
-        evdev::Key::KEY_SEMICOLON => Some(':'),
-        evdev::Key::KEY_EQUAL => Some('='),
-        evdev::Key::KEY_MINUS => Some('-'),
-        evdev::Key::KEY_DOT => Some('.'),
+        evdev::KeyCode::KEY_0 => Some('0'),
+        evdev::KeyCode::KEY_1 => Some('1'),
+        evdev::KeyCode::KEY_2 => Some('2'),
+        evdev::KeyCode::KEY_3 => Some('3'),
+        evdev::KeyCode::KEY_4 => Some('4'),
+        evdev::KeyCode::KEY_5 => Some('5'),
+        evdev::KeyCode::KEY_6 => Some('6'),
+        evdev::KeyCode::KEY_7 => Some('7'),
+        evdev::KeyCode::KEY_8 => Some('8'),
+        evdev::KeyCode::KEY_9 => Some('9'),
+        evdev::KeyCode::KEY_A => Some('a'),
+        evdev::KeyCode::KEY_B => Some('b'),
+        evdev::KeyCode::KEY_C => Some('c'),
+        evdev::KeyCode::KEY_D => Some('d'),
+        evdev::KeyCode::KEY_E => Some('e'),
+        evdev::KeyCode::KEY_F => Some('f'),
+        evdev::KeyCode::KEY_G => Some('g'),
+        evdev::KeyCode::KEY_H => Some('h'),
+        evdev::KeyCode::KEY_I => Some('i'),
+        evdev::KeyCode::KEY_J => Some('j'),
+        evdev::KeyCode::KEY_K => Some('k'),
+        evdev::KeyCode::KEY_L => Some('l'),
+        evdev::KeyCode::KEY_M => Some('m'),
+        evdev::KeyCode::KEY_N => Some('n'),
+        evdev::KeyCode::KEY_O => Some('o'),
+        evdev::KeyCode::KEY_P => Some('p'),
+        evdev::KeyCode::KEY_Q => Some('q'),
+        evdev::KeyCode::KEY_R => Some('r'),
+        evdev::KeyCode::KEY_S => Some('s'),
+        evdev::KeyCode::KEY_T => Some('t'),
+        evdev::KeyCode::KEY_U => Some('u'),
+        evdev::KeyCode::KEY_V => Some('v'),
+        evdev::KeyCode::KEY_W => Some('w'),
+        evdev::KeyCode::KEY_X => Some('x'),
+        evdev::KeyCode::KEY_Y => Some('y'),
+        evdev::KeyCode::KEY_Z => Some('z'),
+        evdev::KeyCode::KEY_SLASH => Some('/'),
+        evdev::KeyCode::KEY_SEMICOLON => Some(':'),
+        evdev::KeyCode::KEY_EQUAL => Some('='),
+        evdev::KeyCode::KEY_MINUS => Some('-'),
+        evdev::KeyCode::KEY_DOT => Some('.'),
         _ => None,
     }
 }
 
 fn get_device(vendor_id: u16, product_id: u16) -> Option<evdev::Device> {
-    for device in evdev::enumerate().map(|v| v.1) {
-        let input_id = device.input_id();
+    for device in evdev::enumerate() {
+        let input_id = device.1.input_id();
         if input_id.vendor() == vendor_id && input_id.product() == product_id {
-            return Some(device);
+            return Some(device.1);
         }
     }
     None
@@ -124,7 +124,7 @@ fn capture_device_input<K>(
     input_event_variant: fn(String) -> InputEvent,
     sender: Sender<InputEvent>,
 ) where
-    K: Fn(evdev::Key) -> Option<char>,
+    K: Fn(evdev::KeyCode) -> Option<char>,
 {
     if let Some(mut device) = get_device(vendor, product) {
         device.grab().unwrap();
@@ -134,8 +134,8 @@ fn capture_device_input<K>(
                 return;
             };
             for e in ev.filter(|e| e.value() == 1) {
-                if let InputEventKind::Key(k) = e.kind() {
-                    if k == evdev::Key::KEY_ENTER {
+                if let EventSummary::Key(_, k, _) = e.destructure() {
+                    if k == evdev::KeyCode::KEY_ENTER {
                         sender.send(input_event_variant(input.clone())).unwrap();
                         input.clear();
                     } else if let Some(ch) = key_to_char(k) {
