@@ -588,7 +588,7 @@ pub fn user_loop(terminal_io: &mut TerminalIO, credentials: &rv_api::Authenticat
                 Ok(InputEvent::Barcode(barcode)) => {
                     let trimmed_barcode = barcode.trim();
                     if Regex::new("^[0-9]+$").expect("").is_match(trimmed_barcode) {
-                        purchase_items(&command, 1, terminal_io, credentials);
+                        purchase_items(&trimmed_barcode, 1, terminal_io, credentials);
                         printline(terminal_io, "");
                         break;
                     }
