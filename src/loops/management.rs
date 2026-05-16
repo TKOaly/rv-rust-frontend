@@ -647,7 +647,10 @@ fn change_box_properties(
         terminal_io,
         &format!("Current itembarcode: '{product_barcode}'"),
     );
-    printline(terminal_io, &format!("Modify or keep [{product_barcode}]: "));
+    printline(
+        terminal_io,
+        &format!("Modify or keep [{product_barcode}]: "),
+    );
     let input_line = match readline_barcode(terminal_io, INPUT_TIMEOUT_LONG) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
         TimeoutResult::RESULT(s) => s,
