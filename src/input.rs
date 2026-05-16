@@ -1,6 +1,6 @@
 use crossterm::{
     self,
-    event::{self, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers},
+    event::{KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers},
 };
 use evdev::{self, EventSummary};
 use rusb::{Context, UsbContext};
@@ -14,6 +14,7 @@ use std::{
         mpsc::{Receiver, Sender},
     },
     thread,
+    time::{Duration, Instant},
 };
 
 use crate::DEVELOPMENT_MODE;
@@ -127,7 +128,23 @@ fn capture_device_input<K>(
     K: Fn(evdev::KeyCode) -> Option<char>,
 {
     if let Some(mut device) = get_device(vendor, product) {
-        device.grab().unwrap();
+        if device.is_grabbed() {
+            return;
+        }
+
+        let start = Instant::now();
+        loop {
+            match device.grab() {
+                Ok(_) => break,
+                Err(_) => {
+                    if start.elapsed() > Duration::from_secs(1) {
+                        return;
+                    }
+                    thread::sleep(Duration::from_millis(50));
+                }
+            }
+        }
+
         let mut input = String::new();
         loop {
             let Ok(ev) = device.fetch_events() else {
