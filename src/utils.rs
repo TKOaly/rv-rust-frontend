@@ -150,7 +150,7 @@ pub fn print_rv_logo(terminal_io: &mut TerminalIO) {
         cursor::MoveTo(0, 3),
         PrintStyledContent(RV_LOGO.to_string().yellow()),
         RestorePosition
-    );
+    ).unwrap();
 }
 
 pub fn readpasswd(terminal_io: &mut TerminalIO, timeout: Duration) -> TimeoutResult<String> {

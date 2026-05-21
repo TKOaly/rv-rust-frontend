@@ -370,7 +370,7 @@ pub fn settings_loop(
                             break;
                         }
                         'q' => {
-                            // for jääräs
+                            // Legacy behavior wanted by some old users, need not to show in the list of commands
                             clear_terminal(terminal_io);
                             break 'main;
                         }

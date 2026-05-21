@@ -123,7 +123,7 @@ fn purchase_items(
     match rv_api::purchase_item(&credentials, &barcode, &count).unwrap() {
         ApiResultPurchaseItem::Success => {
             let product_info = rv_api::get_product_info(&credentials, &barcode).unwrap();
-            if product_info.barcode == "42615374" {
+            if product_info.name == "Coffee" {
                 // Coffee purchase shill
                 utils::printline(terminal_io, &COFFEE_MSG);
             }
@@ -588,7 +588,7 @@ pub fn user_loop(terminal_io: &mut TerminalIO, credentials: &rv_api::Authenticat
                 Ok(InputEvent::Barcode(barcode)) => {
                     let trimmed_barcode = barcode.trim();
                     if Regex::new("^[0-9]+$").expect("").is_match(trimmed_barcode) {
-                        purchase_items(&command, 1, terminal_io, credentials);
+                        purchase_items(&trimmed_barcode, 1, terminal_io, credentials);
                         printline(terminal_io, "");
                         break;
                     }
