@@ -17,7 +17,6 @@ A blazing-fast terminal interface for TKO-äly Ruokavälitys (Snack kiosk), buil
 -   [Deploying](#Deploying)
 -   [Development](#Development)
 -   [Automated Testing](#Automated-testing)
--   [Project structure](#Project structure)
 
 
 ## Deploying
