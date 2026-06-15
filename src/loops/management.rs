@@ -194,7 +194,10 @@ fn buy_in_product(
             return TimeoutResult::RESULT(());
         }
     };
-    utils::printline(terminal_io, &format!("Adding new products to stock."));
+    utils::printline(
+        terminal_io,
+        &format!("Adding more {} to stock.", product.name),
+    );
     let mut buy_price = product.buy_price;
     let mut buy_price_changed = false;
     loop {
