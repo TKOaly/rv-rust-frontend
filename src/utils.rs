@@ -150,7 +150,8 @@ pub fn print_rv_logo(terminal_io: &mut TerminalIO) {
         cursor::MoveTo(0, 3),
         PrintStyledContent(RV_LOGO.to_string().yellow()),
         RestorePosition
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 pub fn readpasswd(terminal_io: &mut TerminalIO, timeout: Duration) -> TimeoutResult<String> {
@@ -287,7 +288,11 @@ fn readline_internal(
     Ok(TimeoutResult::RESULT(ret.trim().to_string()))
 }
 
-pub fn readline_barcode(terminal_io: &mut TerminalIO, timeout: Duration) -> TimeoutResult<String> {
+pub fn readline_barcode(
+    terminal_io: &mut TerminalIO,
+    timeout: Duration,
+    only_digits: bool,
+) -> TimeoutResult<String> {
     let mut barcode = String::new();
     loop {
         match terminal_io.recv.recv_timeout(timeout) {
@@ -297,10 +302,12 @@ pub fn readline_barcode(terminal_io: &mut TerminalIO, timeout: Duration) -> Time
             }
             Ok(input::InputEvent::Terminal(Event::Key(ev))) => match ev.code {
                 KeyCode::Char(c) => {
-                    if c.is_ascii_digit() {
-                        barcode.push(c);
-                        execute!(terminal_io.writer, Print(c)).unwrap();
+                    if only_digits && !c.is_ascii_digit() {
+                        continue;
                     }
+
+                    barcode.push(c);
+                    execute!(terminal_io.writer, Print(c)).unwrap();
                 }
                 KeyCode::Backspace => {
                     if !barcode.is_empty() {
@@ -321,6 +328,7 @@ pub fn readline_barcode(terminal_io: &mut TerminalIO, timeout: Duration) -> Time
             },
             Ok(input::InputEvent::Barcode(input)) => {
                 barcode = input;
+                execute!(terminal_io.writer, Print(&barcode)).unwrap();
                 break;
             }
             _ => (),

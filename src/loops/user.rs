@@ -50,7 +50,7 @@ fn return_purchase(
     utils::print_title(terminal_io, "Return recent purchase");
 
     utils::printline(terminal_io, "Enter product barcode: ");
-    let barcode = match readline_barcode(terminal_io, INPUT_TIMEOUT_SHORT) {
+    let barcode = match readline_barcode(terminal_io, INPUT_TIMEOUT_SHORT, true) {
         TimeoutResult::RESULT(s) => {
             if Regex::new("^[0-9]+$").unwrap().is_match(&s) {
                 s
@@ -84,7 +84,7 @@ fn multibuy(
     print_title(terminal_io, "Multibuy");
 
     utils::printline(terminal_io, "Enter item barcode: ");
-    let barcode = match readline_barcode(terminal_io, INPUT_TIMEOUT_LONG) {
+    let barcode = match readline_barcode(terminal_io, INPUT_TIMEOUT_LONG, true) {
         TimeoutResult::RESULT(s) => {
             if Regex::new("^[0-9]+$").unwrap().is_match(&s) {
                 s
@@ -174,8 +174,8 @@ pub fn search_products(
     credentials: &rv_api::AuthenticationResponse,
 ) -> TimeoutResult<()> {
     print_title(terminal_io, "Product search");
-    printline(terminal_io, "Enter name or barcode");
-    let query = match readline_barcode(terminal_io, INPUT_TIMEOUT_SHORT) {
+    printline(terminal_io, "Enter name or barcode:");
+    let query = match readline_barcode(terminal_io, INPUT_TIMEOUT_SHORT, false) {
         TimeoutResult::RESULT(s) => s,
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
     };

@@ -194,7 +194,10 @@ fn buy_in_product(
             return TimeoutResult::RESULT(());
         }
     };
-    utils::printline(terminal_io, &format!("Adding new products to stock."));
+    utils::printline(
+        terminal_io,
+        &format!("Adding more {} to stock.", product.name),
+    );
     let mut buy_price = product.buy_price;
     let mut buy_price_changed = false;
     loop {
@@ -598,7 +601,7 @@ fn change_item_properties(
 ) -> TimeoutResult<()> {
     print_title(terminal_io, "Change item properties");
     utils::printline(terminal_io, "Enter barcode: ");
-    let barcode = match readline_barcode(terminal_io, INPUT_TIMEOUT_LONG) {
+    let barcode = match readline_barcode(terminal_io, INPUT_TIMEOUT_LONG, true) {
         TimeoutResult::RESULT(s) => {
             if Regex::new("^[0-9]+$").unwrap().is_match(&s) {
                 s
@@ -651,7 +654,7 @@ fn change_box_properties(
         terminal_io,
         &format!("Modify or keep [{product_barcode}]: "),
     );
-    let input_line = match readline_barcode(terminal_io, INPUT_TIMEOUT_LONG) {
+    let input_line = match readline_barcode(terminal_io, INPUT_TIMEOUT_LONG, true) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
         TimeoutResult::RESULT(s) => s,
     };
@@ -735,7 +738,7 @@ fn change_product_properties(
     utils::printline(terminal_io, &format!("Current description: '{barcode}'"));
     utils::printline(terminal_io, &format!("Modify or keep [{barcode}]: "));
 
-    let input_line = match utils::readline_barcode(terminal_io, INPUT_TIMEOUT_LONG) {
+    let input_line = match utils::readline_barcode(terminal_io, INPUT_TIMEOUT_LONG, true) {
         TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
         TimeoutResult::RESULT(s) => s,
     };
