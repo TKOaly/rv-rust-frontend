@@ -321,6 +321,7 @@ pub fn readline_barcode(terminal_io: &mut TerminalIO, timeout: Duration) -> Time
             },
             Ok(input::InputEvent::Barcode(input)) => {
                 barcode = input;
+                execute!(terminal_io.writer, Print(&barcode)).unwrap();
                 break;
             }
             _ => (),
