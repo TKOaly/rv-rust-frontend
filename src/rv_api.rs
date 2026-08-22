@@ -1077,27 +1077,28 @@ pub fn set_margin(margin: f32, credentials: &AuthenticationResponse) -> Result<(
 }
 
 pub fn get_margin(credentials: &AuthenticationResponse) -> Result<f32, reqwest::Error> {
-    #[derive(Deserialize)]
-    struct Preference {
-        key: String,
-        value: f32,
-    }
-    #[derive(Deserialize)]
-    struct Hax {
-        preference: Preference,
-    }
-    let client = reqwest::blocking::Client::new();
-    let resp = client
-        .get(format!(
-            "{}/v1/admin/preferences/globalDefaultMargin",
-            *API_URL
-        ))
-        .header(
-            "Authorization",
-            String::from("Bearer ") + &credentials.access_token,
-        )
-        .send()?;
-    Ok(resp.json::<Hax>().unwrap().preference.value)
+    // #[derive(Deserialize)]
+    // struct Preference {
+    //     key: String,
+    //     value: f32,
+    // }
+    // #[derive(Deserialize)]
+    // struct Hax {
+    //     preference: Preference,
+    // }
+    // let client = reqwest::blocking::Client::new();
+    // let resp = client
+    //     .get(format!(
+    //         "{}/v1/admin/preferences/globalDefaultMargin",
+    //         *API_URL
+    //     ))
+    //     .header(
+    //         "Authorization",
+    //         String::from("Bearer ") + &credentials.access_token,
+    //     )
+    //     .send()?;
+    let margin: f32 = 1.08;
+    Ok(margin)
 }
 
 pub fn get_categories(
