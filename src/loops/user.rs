@@ -347,11 +347,28 @@ fn deposit(
                     return TimeoutResult::RESULT(());
                 } else if s == "cash" {
                     rv_api::deposit(&credentials, &amount, "cash").unwrap();
-                    utils::printline(terminal_io, "Remember to put cash in an envelope or send an email immediately to rahastonhoitaja@tko-aly.fi to explain a non-envelope deposit.");
+                    utils::printline(terminal_io, "");
                     utils::printline(
                         terminal_io,
-                        &format!("Current date: {}", Local::now().format("%d/%m/%Y")).to_string(),
+                        &format!(
+                            "1. Fill out a deposit note. Current date: {}",
+                            Local::now().format("%d/%m/%Y")
+                        )
+                        .to_string(),
                     );
+                    utils::printline(
+                        terminal_io,
+                        "2. Place the note into a plastic bag with the cash",
+                    );
+                    utils::printline(terminal_io, "3. Drop the bag into the safe. ");
+                    utils::printline(terminal_io, "");
+                    utils::printline(
+                        terminal_io,
+                        "If you forgot the deposit note, please email rahastonhoitaja@tko-aly.fi",
+                    );
+                    utils::printline(terminal_io, "to explain the incorrect deposit.");
+
+                    utils::printline(terminal_io, "");
 
                     utils::confirm_enter_to_continue(terminal_io);
                     break;
