@@ -487,7 +487,7 @@ fn new_box(
     utils::printline(terminal_io, "Creating a new box.");
     let product_barcode = loop {
         utils::printline(terminal_io, "Enter product barcode.");
-        let input_line = match utils::readline(terminal_io, INPUT_TIMEOUT_LONG) {
+        let input_line = match utils::readline_barcode(terminal_io, INPUT_TIMEOUT_LONG, true) {
             TimeoutResult::TIMEOUT => return TimeoutResult::TIMEOUT,
             TimeoutResult::RESULT(s) => s,
         };
